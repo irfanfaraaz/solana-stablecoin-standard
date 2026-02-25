@@ -602,6 +602,37 @@ describe("solana-stablecoin-standard", () => {
     });
   });
 
+  describe("Preset config tests", () => {
+    it("SSS-2 mint has enableTransferHook and enablePermanentDelegate true", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      const sdk = new SolanaStablecoin(
+        stablecoinProgram,
+        mintPda,
+        transferHookProgram,
+      );
+      const config = await sdk.getConfig();
+      expect(config.enableTransferHook).to.be.true;
+      expect(config.enablePermanentDelegate).to.be.true;
+      expect(config.decimals).to.equal(6);
+      expect(config.isPaused).to.be.false;
+    });
+
+    it("SSS-1 mint has enableTransferHook and enablePermanentDelegate false", async () => {
+      const sss1Mint = SolanaStablecoin.getMintPDA(
+        "SSS1",
+        stablecoinProgram.programId,
+      );
+      const sdk = new SolanaStablecoin(stablecoinProgram, sss1Mint);
+      const config = await sdk.getConfig();
+      expect(config.enableTransferHook).to.be.false;
+      expect(config.enablePermanentDelegate).to.be.false;
+      expect(config.decimals).to.equal(6);
+    });
+  });
+
   describe("Unit: instruction error cases", () => {
     it("add_to_blacklist on SSS-1 mint returns ComplianceNotEnabled", async () => {
       const sss1Mint = SolanaStablecoin.getMintPDA(
@@ -727,6 +758,231 @@ describe("solana-stablecoin-standard", () => {
       expect((err as { message?: string }).message).to.include(
         "MinterInactive",
       );
+    });
+  });
+
+  describe("Unit: instruction success cases", () => {
+    it("update_roles updates burner and pauser", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      sss2Sdk.mintAddress = mintPda;
+      const rolesBefore = await sss2Sdk.getRoles();
+      const newBurner = anchor.web3.Keypair.generate();
+      const newPauser = anchor.web3.Keypair.generate();
+      await sss2Sdk
+        .updateRoles(authority.publicKey, {
+          burner: newBurner.publicKey,
+          pauser: newPauser.publicKey,
+        })
+        .then((tx) => tx.rpc());
+      const rolesAfter = await sss2Sdk.getRoles();
+      expect(rolesAfter.burner.toBase58()).to.equal(newBurner.publicKey.toBase58());
+      expect(rolesAfter.pauser.toBase58()).to.equal(newPauser.publicKey.toBase58());
+      // Restore so later tests (e.g. pause) still work with original authority
+      await sss2Sdk
+        .updateRoles(authority.publicKey, {
+          burner: rolesBefore.burner,
+          pauser: rolesBefore.pauser,
+        })
+        .then((tx) => tx.rpc());
+    });
+
+    it("configure_minter sets is_active and daily_mint_quota", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      sss2Sdk.mintAddress = mintPda;
+      const minterKp = anchor.web3.Keypair.generate();
+      const quota = 500;
+      await sss2Sdk
+        .updateMinter(authority.publicKey, minterKp.publicKey, true, quota)
+        .then((tx) => tx.rpc());
+      const minterPda = SolanaStablecoin.getMinterPDA(
+        mintPda,
+        minterKp.publicKey,
+        stablecoinProgram.programId,
+      );
+      const minterConfig = await stablecoinProgram.account.minterConfig.fetch(
+        minterPda,
+      );
+      expect(minterConfig.isActive).to.be.true;
+      expect(Number(minterConfig.dailyMintQuota)).to.equal(quota);
+    });
+
+    it("transfer_authority updates master_authority", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      const configPda = SolanaStablecoin.getConfigPDA(
+        mintPda,
+        stablecoinProgram.programId,
+      );
+      const newAuthority = anchor.web3.Keypair.generate();
+      const airdropSig = await connection.requestAirdrop(
+        newAuthority.publicKey,
+        anchor.web3.LAMPORTS_PER_SOL,
+      );
+      const lb = await connection.getLatestBlockhash();
+      await connection.confirmTransaction(
+        { signature: airdropSig, ...lb },
+        "confirmed",
+      );
+      await stablecoinProgram.methods
+        .transferAuthority(newAuthority.publicKey)
+        .accounts({
+          admin: authority.publicKey,
+          config: configPda,
+          mint: mintPda,
+        } as any)
+        .rpc();
+      const configAfter = await stablecoinProgram.account.stablecoinConfig.fetch(
+        configPda,
+      );
+      expect(configAfter.masterAuthority.toBase58()).to.equal(
+        newAuthority.publicKey.toBase58(),
+      );
+      // Transfer back so rest of suite has authority
+      await stablecoinProgram.methods
+        .transferAuthority(authority.publicKey)
+        .accounts({
+          admin: newAuthority.publicKey,
+          config: configPda,
+          mint: mintPda,
+        } as any)
+        .signers([newAuthority])
+        .rpc();
+    });
+
+    it("remove_from_blacklist allows transfer after removal", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      sss2Sdk.mintAddress = mintPda;
+      // user2 was blacklisted in main flow; remove them
+      await complianceSdk
+        .removeFromBlacklist(authority.publicKey, user2.publicKey)
+        .then((tx) => tx.rpc());
+      const user1Ata = getAssociatedTokenAddressSync(
+        mintPda,
+        user1.publicKey,
+        true,
+        TOKEN_2022_PROGRAM_ID,
+      );
+      const user2Ata = getAssociatedTokenAddressSync(
+        mintPda,
+        user2.publicKey,
+        true,
+        TOKEN_2022_PROGRAM_ID,
+      );
+      const transferIx = await createTransferCheckedWithTransferHookInstruction(
+        connection,
+        user1Ata,
+        mintPda,
+        user2Ata,
+        user1.publicKey,
+        BigInt(1),
+        6,
+        [],
+        undefined,
+        TOKEN_2022_PROGRAM_ID,
+      );
+      const sig = await anchor.web3.sendAndConfirmTransaction(
+        connection,
+        new anchor.web3.Transaction().add(transferIx),
+        [user1],
+      );
+      expect(sig).to.be.a("string");
+    });
+  });
+
+  describe("SDK unit tests", () => {
+    it("getTotalSupply returns BN and increases after mint", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      const sdk = new SolanaStablecoin(
+        stablecoinProgram,
+        mintPda,
+        transferHookProgram,
+      );
+      const supplyBefore = await sdk.getTotalSupply();
+      expect(typeof supplyBefore).to.equal("bigint");
+      expect(Number(supplyBefore)).to.be.gte(0);
+      // Mint 100 more
+      await sss2Sdk
+        .mint(authority.publicKey, user1.publicKey, 100)
+        .then((tx) => tx.rpc());
+      const supplyAfter = await sdk.getTotalSupply();
+      expect(Number(supplyAfter)).to.equal(Number(supplyBefore) + 100);
+    });
+
+    it("getConfig returns shape with decimals, isPaused, flags", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      const sdk = new SolanaStablecoin(
+        stablecoinProgram,
+        mintPda,
+        transferHookProgram,
+      );
+      const config = await sdk.getConfig();
+      expect(config).to.have.property("decimals", 6);
+      expect(config).to.have.property("isPaused");
+      expect(config).to.have.property("masterAuthority");
+      expect(config).to.have.property("mint");
+      expect(config.mint.toBase58()).to.equal(mintPda.toBase58());
+      expect(config).to.have.property("enableTransferHook", true);
+      expect(config).to.have.property("enablePermanentDelegate", true);
+      expect(config).to.have.property("bump");
+    });
+
+    it("getRoles returns burner, pauser, blacklister, seizer", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      const sdk = new SolanaStablecoin(
+        stablecoinProgram,
+        mintPda,
+        transferHookProgram,
+      );
+      const roles = await sdk.getRoles();
+      expect(roles).to.have.property("burner");
+      expect(roles).to.have.property("pauser");
+      expect(roles).to.have.property("blacklister");
+      expect(roles).to.have.property("seizer");
+      expect(roles).to.have.property("bump");
+      const rolesPda = SolanaStablecoin.getRoleAccountPDA(
+        mintPda,
+        stablecoinProgram.programId,
+      );
+      const raw = await stablecoinProgram.account.roleAccount.fetch(rolesPda);
+      expect(roles.burner.toBase58()).to.equal(raw.burner.toBase58());
+      expect(roles.pauser.toBase58()).to.equal(raw.pauser.toBase58());
+    });
+
+    it("SolanaStablecoin.load returns instance with getConfig/getTotalSupply", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      const loaded = SolanaStablecoin.load(
+        stablecoinProgram,
+        mintPda,
+        transferHookProgram,
+      );
+      expect(loaded.mintAddress?.toBase58()).to.equal(mintPda.toBase58());
+      const config = await loaded.getConfig();
+      expect(config.decimals).to.equal(6);
+      const supply = await loaded.getTotalSupply();
+      expect(typeof supply).to.equal("bigint");
     });
   });
 });

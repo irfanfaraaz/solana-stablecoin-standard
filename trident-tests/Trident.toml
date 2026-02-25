@@ -1,0 +1,6 @@
+[fuzz.metrics]
+enabled = true
+
+[[fuzz.programs]]
+address = "3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM"
+program = "../target/deploy/stablecoin.so"
