@@ -1,0 +1,461 @@
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+  Signer,
+} from "@solana/web3.js";
+import { Program, AnchorProvider, Wallet, Idl, BN } from "@coral-xyz/anchor";
+import {
+  TOKEN_2022_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import type { Stablecoin } from "../../target/types/stablecoin";
+import type { TransferHook } from "../../target/types/transfer_hook";
+
+/** Config for creating a new stablecoin (name, symbol, etc.). Not stored on-chain except via metadata. */
+export interface StablecoinConfig {
+  name: string;
+  symbol: string;
+  uri: string;
+  decimals: number;
+  enablePermanentDelegate: boolean;
+  enableTransferHook: boolean;
+}
+
+/** On-chain config account (decimals, pause, flags). Name/symbol/uri are not on-chain in current program. */
+export interface StablecoinConfigAccount {
+  bump: number;
+  masterAuthority: PublicKey;
+  mint: PublicKey;
+  decimals: number;
+  isPaused: boolean;
+  enablePermanentDelegate: boolean;
+  enableTransferHook: boolean;
+  enableConfidentialTransfers: boolean;
+}
+
+/** On-chain role account (burner, pauser, blacklister, seizer). */
+export interface RoleAccountData {
+  bump: number;
+  burner: PublicKey;
+  pauser: PublicKey;
+  blacklister: PublicKey;
+  seizer: PublicKey;
+}
+
+export class SolanaStablecoin {
+  public program: Program<Stablecoin>;
+  public mintAddress?: PublicKey;
+  public transferHookProgram?: Program<TransferHook>;
+
+  constructor(
+    program: Program<Stablecoin>,
+    mintAddress?: PublicKey,
+    transferHookProgram?: Program<TransferHook>,
+  ) {
+    this.program = program;
+    this.mintAddress = mintAddress;
+    this.transferHookProgram = transferHookProgram;
+  }
+
+  // PDA getters
+  static getMintPDA(symbol: string, programId: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("mint"), Buffer.from(symbol)],
+      programId,
+    )[0];
+  }
+
+  static getConfigPDA(mint: PublicKey, programId: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("config"), mint.toBuffer()],
+      programId,
+    )[0];
+  }
+
+  static getRoleAccountPDA(mint: PublicKey, programId: PublicKey): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("roles"), mint.toBuffer()],
+      programId,
+    )[0];
+  }
+
+  static getMinterPDA(
+    mint: PublicKey,
+    minter: PublicKey,
+    programId: PublicKey,
+  ): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("minter"), mint.toBuffer(), minter.toBuffer()],
+      programId,
+    )[0];
+  }
+
+  static getBlacklistEntryPDA(
+    mint: PublicKey,
+    account: PublicKey,
+    programId: PublicKey,
+  ): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("blacklist"), mint.toBuffer(), account.toBuffer()],
+      programId,
+    )[0];
+  }
+
+  static getExtraAccountMetaListPDA(
+    mint: PublicKey,
+    transferHookProgramId: PublicKey,
+  ): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("extra-account-metas"), mint.toBuffer()],
+      transferHookProgramId,
+    )[0];
+  }
+
+  // Core operations
+
+  async initialize(
+    authority: PublicKey,
+    config: StablecoinConfig,
+    transferHookProgramId?: PublicKey,
+  ) {
+    const mint = SolanaStablecoin.getMintPDA(
+      config.symbol,
+      this.program.programId,
+    );
+    this.mintAddress = mint;
+    const configPda = SolanaStablecoin.getConfigPDA(
+      mint,
+      this.program.programId,
+    );
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+
+    const builder = this.program.methods
+      .initialize(
+        config.name,
+        config.symbol,
+        config.uri,
+        config.decimals,
+        config.enablePermanentDelegate,
+        config.enableTransferHook,
+        false, // enableConfidentialTransfers
+        transferHookProgramId || null,
+      )
+      .accounts({
+        admin: authority,
+        config: configPda,
+        roleAccount,
+        mint,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      } as any);
+
+    return builder;
+  }
+
+  async mint(
+    authority: PublicKey,
+    to: PublicKey,
+    amount: number | string, // Will be converted to BN
+  ) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+    const minterAccount = SolanaStablecoin.getMinterPDA(
+      mint,
+      authority,
+      this.program.programId,
+    );
+    const destinationAtas = getAssociatedTokenAddressSync(
+      mint,
+      to,
+      true,
+      TOKEN_2022_PROGRAM_ID,
+    );
+
+    return this.program.methods.mint(new BN(amount)).accounts({
+      minter: authority,
+      config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+      minterConfig: minterAccount,
+      mint,
+      toAccount: destinationAtas,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+    } as any);
+  }
+
+  async burn(
+    authority: PublicKey,
+    from: PublicKey,
+    amount: number | string, // Will be converted to BN
+  ) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+    const sourceAta = getAssociatedTokenAddressSync(
+      mint,
+      from,
+      true,
+      TOKEN_2022_PROGRAM_ID,
+    );
+
+    return this.program.methods.burn(new BN(amount)).accounts({
+      burner: authority,
+      config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+      roles: roleAccount,
+      mint,
+      fromAccount: sourceAta,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+    } as any);
+  }
+
+  async freezeAccount(authority: PublicKey, accountToFreeze: PublicKey) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+    const ataToFreeze = getAssociatedTokenAddressSync(
+      mint,
+      accountToFreeze,
+      true,
+      TOKEN_2022_PROGRAM_ID,
+    );
+
+    return this.program.methods.freezeAccount().accounts({
+      blacklister: authority,
+      config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+      roles: roleAccount,
+      mint,
+      tokenAccount: ataToFreeze,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+    } as any);
+  }
+
+  async thawAccount(authority: PublicKey, accountToThaw: PublicKey) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+    const ataToThaw = getAssociatedTokenAddressSync(
+      mint,
+      accountToThaw,
+      true,
+      TOKEN_2022_PROGRAM_ID,
+    );
+
+    return this.program.methods.thawAccount().accounts({
+      blacklister: authority,
+      config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+      roles: roleAccount,
+      mint,
+      tokenAccount: ataToThaw,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+    } as any);
+  }
+
+  async pause(authority: PublicKey) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+
+    return this.program.methods.pause().accounts({
+      pauser: authority,
+      config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+      roles: roleAccount,
+      mint,
+    } as any);
+  }
+
+  async unpause(authority: PublicKey) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+
+    return this.program.methods.unpause().accounts({
+      pauser: authority,
+      config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+      roles: roleAccount,
+      mint,
+    } as any);
+  }
+
+  async updateMinter(
+    authority: PublicKey,
+    minter: PublicKey,
+    isActive: boolean,
+    dailyLimit: number | string,
+  ) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const minterAccount = SolanaStablecoin.getMinterPDA(
+      mint,
+      minter,
+      this.program.programId,
+    );
+
+    return this.program.methods
+      .configureMinter(isActive, new BN(dailyLimit))
+      .accounts({
+        admin: authority,
+        config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+        minter,
+        minterConfig: minterAccount,
+        mint,
+        systemProgram: SystemProgram.programId,
+      } as any);
+  }
+
+  async updateRoles(
+    authority: PublicKey,
+    roles: {
+      burner?: PublicKey | null;
+      pauser?: PublicKey | null;
+      blacklister?: PublicKey | null;
+      seizer?: PublicKey | null;
+    },
+  ) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.program.programId,
+    );
+
+    return this.program.methods
+      .updateRoles(
+        roles.burner || null,
+        roles.pauser || null,
+        roles.blacklister || null,
+        roles.seizer || null,
+      )
+      .accounts({
+        admin: authority,
+        config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+        roles: roleAccount,
+        mint,
+      } as any);
+  }
+
+  // --- View methods (req: getTotalSupply, getConfig, getRoles) ---
+
+  /** Returns total supply of the stablecoin mint. Requires mintAddress to be set. */
+  async getTotalSupply(): Promise<bigint> {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const info = await this.program.provider.connection.getTokenSupply(
+      this.mintAddress,
+    );
+    return BigInt(info.value.amount);
+  }
+
+  /** Fetches on-chain config (decimals, pause, flags). Name/symbol/uri are not stored on-chain. */
+  async getConfig(): Promise<StablecoinConfigAccount> {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const configPda = SolanaStablecoin.getConfigPDA(
+      this.mintAddress,
+      this.program.programId,
+    );
+    const raw = await this.program.account.stablecoinConfig.fetch(configPda);
+    return {
+      bump: raw.bump,
+      masterAuthority: raw.masterAuthority,
+      mint: raw.mint,
+      decimals: raw.decimals,
+      isPaused: raw.isPaused,
+      enablePermanentDelegate: raw.enablePermanentDelegate,
+      enableTransferHook: raw.enableTransferHook,
+      enableConfidentialTransfers: raw.enableConfidentialTransfers,
+    };
+  }
+
+  /** Fetches on-chain role account (burner, pauser, blacklister, seizer). */
+  async getRoles(): Promise<RoleAccountData> {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const rolesPda = SolanaStablecoin.getRoleAccountPDA(
+      this.mintAddress,
+      this.program.programId,
+    );
+    const raw = await this.program.account.roleAccount.fetch(rolesPda);
+    return {
+      bump: raw.bump,
+      burner: raw.burner,
+      pauser: raw.pauser,
+      blacklister: raw.blacklister,
+      seizer: raw.seizer,
+    };
+  }
+
+  /**
+   * Create a new stablecoin: initialize mint + config, and for SSS-2 init transfer-hook extra accounts.
+   * Caller must run .rpc() on the returned init builder (and optionally on hook init).
+   */
+  static async create(
+    program: Program<Stablecoin>,
+    authority: PublicKey,
+    config: StablecoinConfig,
+    transferHookProgram?: Program<TransferHook>,
+  ): Promise<SolanaStablecoin> {
+    const instance = new SolanaStablecoin(
+      program,
+      undefined,
+      transferHookProgram,
+    );
+    const initBuilder = await instance.initialize(
+      authority,
+      config,
+      transferHookProgram?.programId,
+    );
+    await initBuilder.rpc();
+    instance.mintAddress = SolanaStablecoin.getMintPDA(
+      config.symbol,
+      program.programId,
+    );
+    if (
+      config.enableTransferHook &&
+      transferHookProgram &&
+      instance.mintAddress
+    ) {
+      const compliance = new (await import("./compliance")).SSSComplianceModule(
+        instance,
+      );
+      const hookInit = await compliance.initializeTransferHookExtraAccounts(
+        authority,
+      );
+      await hookInit.rpc();
+    }
+    return instance;
+  }
+
+  /**
+   * Load an existing stablecoin by mint address (no init). Use for existing mints.
+   */
+  static load(
+    program: Program<Stablecoin>,
+    mintAddress: PublicKey,
+    transferHookProgram?: Program<TransferHook>,
+  ): SolanaStablecoin {
+    return new SolanaStablecoin(program, mintAddress, transferHookProgram);
+  }
+}

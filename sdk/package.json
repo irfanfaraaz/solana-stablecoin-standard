@@ -1,0 +1,19 @@
+{
+    "name": "@stbr/sss-token",
+    "version": "0.1.0",
+    "description": "Solana Stablecoin Standard TypeScript SDK",
+    "main": "dist/sdk/src/index.js",
+    "types": "dist/sdk/src/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@coral-xyz/anchor": "^0.30.1",
+        "@solana/spl-token": "^0.4.8",
+        "@solana/web3.js": "^1.95.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
