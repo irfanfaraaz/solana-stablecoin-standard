@@ -13,7 +13,7 @@ import { PublicKey } from "@solana/web3.js";
 import { Wallet } from "@coral-xyz/anchor";
 
 const keypairPath = process.env.KEYPAIR_PATH ?? "~/.config/solana/id.json";
-const rpcUrl = process.env.RPC_URL ?? "http://127.0.0.1:8899";
+const rpcUrl = process.env.RPC_URL ?? "https://api.devnet.solana.com";
 const mintEnv = process.env.SSS_MINT_ADDRESS;
 
 export function Root() {

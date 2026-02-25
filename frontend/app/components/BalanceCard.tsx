@@ -21,13 +21,17 @@ export function BalanceCard({ mintAddress }: { mintAddress: string | null }) {
 
   useEffect(() => {
     if (!owner || !mint || !isValidMintLength) {
-      setBalance(null);
-      setError(null);
+      queueMicrotask(() => {
+        setBalance(null);
+        setError(null);
+      });
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
     const connection = new Connection(RPC_URL, { commitment: "confirmed" });
     const mintPubkey = new PublicKey(mint);
     const ownerPubkey = new PublicKey(owner);

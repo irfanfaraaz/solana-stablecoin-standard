@@ -33,7 +33,7 @@ export function loadKeypair(keypairPath: string): Keypair {
 }
 
 export function getConnection(rpcUrl?: string): Connection {
-  const url = rpcUrl ?? process.env.RPC_URL ?? "http://127.0.0.1:8899";
+  const url = rpcUrl ?? process.env.RPC_URL ?? "https://api.devnet.solana.com";
   return new Connection(url, { commitment: "confirmed" });
 }
 

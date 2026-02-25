@@ -64,14 +64,16 @@ yarn frontend:dev               # Start dev server
 
 Open the app, connect a wallet, paste the mint address, and use the UI for status, balance, and transfers. See [frontend/README.md](frontend/README.md).
 
-## Program IDs (localnet)
+## Program IDs (devnet / localnet)
 
-| Program        | Localnet (default) |
-|----------------|-------------------|
+Default RPC is **devnet** (`https://api.devnet.solana.com`). CLI, TUI, backend, and frontend use these program IDs (same on devnet and localnet for this repo):
+
+| Program        | ID (devnet and localnet) |
+|----------------|--------------------------|
 | stablecoin     | `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM` |
 | transfer_hook  | `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi` |
 
-For Devnet deployment and example tx links, see [DEPLOYMENT.md](docs/DEPLOYMENT.md).
+For local tests run `anchor test` (starts a local validator). For devnet deployment proof and example tx links, see [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Preset comparison
 

@@ -14,7 +14,7 @@ import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { SolanaStablecoin, SSSComplianceModule } from "@stbr/sss-token";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
-const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:8899";
+const RPC_URL = process.env.RPC_URL || "https://api.devnet.solana.com";
 const KEYPAIR_PATH = process.env.KEYPAIR_PATH || path.join(process.env.HOME || "", ".config/solana/id.json");
 const DEFAULT_MINT = process.env.MINT_ADDRESS || "";
 

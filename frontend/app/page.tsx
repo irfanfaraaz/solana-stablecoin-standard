@@ -19,7 +19,7 @@ export default function Home() {
   const trimmed = mintInput.trim();
   useEffect(() => {
     if (!trimmed) {
-      setDebouncedMint(DEFAULT_MINT || null);
+      queueMicrotask(() => setDebouncedMint(DEFAULT_MINT || null));
       return;
     }
     const id = setTimeout(() => setDebouncedMint(trimmed), MINT_DEBOUNCE_MS);

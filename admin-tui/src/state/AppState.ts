@@ -35,7 +35,7 @@ export interface AppState {
 
 export const initialAppState: AppState = {
   keypairPath: process.env.KEYPAIR_PATH ?? "~/.config/solana/id.json",
-  rpcUrl: process.env.RPC_URL ?? "http://127.0.0.1:8899",
+  rpcUrl: process.env.RPC_URL ?? "https://api.devnet.solana.com",
   mintAddress: null,
   programs: null,
   sdk: null,

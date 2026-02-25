@@ -9,7 +9,7 @@ From repo root:
 ```bash
 export SSS_MINT_ADDRESS=<MINT_ADDRESS>   # required for mint/burn/freeze/etc.
 export KEYPAIR_PATH=~/.config/solana/id.json
-export RPC_URL=http://127.0.0.1:8899
+export RPC_URL=https://api.devnet.solana.com   # or http://127.0.0.1:8899 for local validator
 yarn tui
 ```
 
@@ -20,7 +20,7 @@ Or from `admin-tui`: `yarn build && yarn start` (or `yarn dev` with tsx). The TU
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-k, --keypair <path>` | Keypair for signer | `~/.config/solana/id.json` |
-| `--rpc-url <url>` | RPC endpoint | `http://127.0.0.1:8899` |
+| `--rpc-url <url>` | RPC endpoint | `https://api.devnet.solana.com` (set to `http://127.0.0.1:8899` for local validator) |
 | `--json` | Output JSON | — |
 
 ## Init

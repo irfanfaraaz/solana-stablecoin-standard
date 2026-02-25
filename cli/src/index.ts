@@ -32,7 +32,7 @@ function loadKeypair(keypairPath: string): Keypair {
 }
 
 function getConnection(rpcUrl: string): Connection {
-  return new Connection(rpcUrl || process.env.RPC_URL || "http://127.0.0.1:8899");
+  return new Connection(rpcUrl || process.env.RPC_URL || "https://api.devnet.solana.com");
 }
 
 function loadPrograms(connection: Connection, wallet: Wallet): {
@@ -86,12 +86,18 @@ function output(data: unknown, json: boolean) {
   else console.log(data);
 }
 
+function getMintFromParent(parent: Command): string {
+  const mint = (parent.parent?.opts?.() ?? parent.opts?.())?.mint;
+  if (!mint) throw new Error("Mint address required (use -m, --mint).");
+  return mint;
+}
+
 const program = new Command();
 program
   .name("sss-token")
   .description("Admin CLI for Solana Stablecoin Standard")
   .option("-k, --keypair <path>", "Keypair path", process.env.KEYPAIR_PATH || "~/.config/solana/id.json")
-  .option("--rpc-url <url>", "RPC URL", process.env.RPC_URL || "http://127.0.0.1:8899")
+  .option("--rpc-url <url>", "RPC URL", process.env.RPC_URL || "https://api.devnet.solana.com")
   .option("--json", "Output JSON");
 
 program
@@ -285,7 +291,7 @@ program
     const connection = getConnection((program.opts() as any).rpcUrl);
     const wallet = new Wallet(keypair);
     const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
-    const mint = new PublicKey(parent.opts().mint);
+    const mint = new PublicKey(getMintFromParent(parent));
     const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
     const compliance = new SSSComplianceModule(sdk);
     const tx = await compliance.addToBlacklist(keypair.publicKey, new PublicKey(address), opts.reason);
@@ -297,7 +303,7 @@ program
     const connection = getConnection((program.opts() as any).rpcUrl);
     const wallet = new Wallet(keypair);
     const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
-    const mint = new PublicKey(parent.opts().mint);
+    const mint = new PublicKey(getMintFromParent(parent));
     const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
     const compliance = new SSSComplianceModule(sdk);
     const tx = await compliance.removeFromBlacklist(keypair.publicKey, new PublicKey(address));
@@ -314,7 +320,7 @@ program
     const connection = getConnection((program.opts() as any).rpcUrl);
     const wallet = new Wallet(keypair);
     const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
-    const mint = new PublicKey(parent.opts().mint);
+    const mint = new PublicKey(getMintFromParent(parent));
     const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
     const tx = await sdk.addToAllowlist(keypair.publicKey, new PublicKey(walletAddress));
     const sig = await tx.rpc();
@@ -325,7 +331,7 @@ program
     const connection = getConnection((program.opts() as any).rpcUrl);
     const wallet = new Wallet(keypair);
     const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
-    const mint = new PublicKey(parent.opts().mint);
+    const mint = new PublicKey(getMintFromParent(parent));
     const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
     const tx = await sdk.removeFromAllowlist(keypair.publicKey, new PublicKey(walletAddress));
     const sig = await tx.rpc();
