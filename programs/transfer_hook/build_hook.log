@@ -1,0 +1,191 @@
+warning: use of deprecated method `anchor_lang::prelude::AccountInfo::<'a>::realloc`: Use AccountInfo::resize() instead
+  --> programs/stablecoin/src/lib.rs:13:1
+   |
+13 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: `stablecoin` (lib) generated 1 warning
+   Compiling transfer-hook v0.1.0 (/Users/irfanfaraaz/Developer/Projects/active/web3/sol/sss/solana-stablecoin-standard/programs/transfer_hook)
+error: pubkey array is not 32 bytes long: len=31
+ --> programs/transfer_hook/src/lib.rs:9:13
+  |
+9 | declare_id!("4VKhzScyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi");
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0432]: unresolved import `anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::lib`
+ --> programs/transfer_hook/src/lib.rs:3:71
+  |
+3 | use anchor_spl::token_2022::spl_token_2022::extension::transfer_hook::lib::TransferHookInstruction;
+  |                                                                       ^^^ could not find `lib` in `transfer_hook`
+
+error[E0432]: unresolved import `spl_transfer_hook_interface::state`
+ --> programs/transfer_hook/src/lib.rs:7:34
+  |
+7 | use spl_transfer_hook_interface::state::ExtraAccountMeta;
+  |                                  ^^^^^ could not find `state` in `spl_transfer_hook_interface`
+
+error[E0425]: cannot find value `ID` in this scope
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^ not found in this scope
+   |
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider importing one of these items
+   |
+1  + use anchor_lang::system_program::ID;
+   |
+1  + use anchor_spl::associated_token::ID;
+   |
+1  + use anchor_spl::metadata::ID;
+   |
+1  + use anchor_spl::token::ID;
+   |
+     and 4 other candidates
+
+error[E0425]: cannot find value `ID` in this scope
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^ not found in this scope
+   |
+   = help: consider importing one of these items:
+           anchor_lang::system_program::ID
+           anchor_spl::associated_token::ID
+           anchor_spl::metadata::ID
+           anchor_spl::token::ID
+           anchor_spl::token_interface::ID
+           spl_token_2022::ID
+           spl_token_2022::native_mint::ID
+           stablecoin::ID
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0425]: cannot find value `ID` in the crate root
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^ not found in the crate root
+   |
+   = help: consider importing one of these items:
+           anchor_lang::system_program::ID
+           anchor_spl::associated_token::ID
+           anchor_spl::metadata::ID
+           anchor_spl::token::ID
+           anchor_spl::token_interface::ID
+           spl_token_2022::ID
+           spl_token_2022::native_mint::ID
+           stablecoin::ID
+   = note: this error originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0425]: cannot find value `ID` in the crate root
+   --> programs/transfer_hook/src/lib.rs:159:33
+    |
+159 |         seeds::program = crate::ID 
+    |                                 ^^ not found in the crate root
+    |
+help: consider importing one of these items
+    |
+1   + use anchor_lang::system_program::ID;
+    |
+1   + use anchor_spl::associated_token::ID;
+    |
+1   + use anchor_spl::metadata::ID;
+    |
+1   + use anchor_spl::token::ID;
+    |
+      and 4 other candidates
+help: if you import `ID`, refer to it directly
+    |
+159 -         seeds::program = crate::ID 
+159 +         seeds::program = ID 
+    |
+
+warning: unexpected `cfg` condition value: `custom-heap`
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program_entrypoint` crate, try updating your dependency with `cargo update -p solana_program_entrypoint`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+   = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-panic`
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program_entrypoint` crate, try updating your dependency with `cargo update -p solana_program_entrypoint`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+   = help: the attribute macro `program` may come from an old version of the `anchor_attribute_program` crate, try updating your dependency with `cargo update -p anchor_attribute_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+   = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/transfer_hook/src/lib.rs:149:10
+    |
+149 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+    = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+    = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: use of deprecated module `anchor_lang::solana_program::system_instruction`: Use `solana_system_interface` crate instead
+ --> programs/transfer_hook/src/lib.rs:2:34
+  |
+2 | use anchor_lang::solana_program::system_instruction;
+  |                                  ^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `anchor_lang::prelude::AccountInfo::<'a>::realloc`: Use AccountInfo::resize() instead
+  --> programs/transfer_hook/src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+Some errors have detailed explanations: E0425, E0432.
+For more information about an error, try `rustc --explain E0425`.
+warning: `transfer-hook` (lib) generated 12 warnings (5 duplicates)
+error: could not compile `transfer-hook` (lib) due to 7 previous errors; 12 warnings emitted
