@@ -8,12 +8,16 @@
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
         "test": "anchor test",
         "cli": "node cli/dist/index.js",
-        "tui": "node admin-tui/dist/index.js"
+        "tui": "node admin-tui/dist/index.js",
+        "frontend:dev": "yarn workspace frontend dev",
+        "frontend:build": "yarn workspace frontend build",
+        "copy-idl": "mkdir -p frontend/public/idl && cp target/idl/stablecoin.json target/idl/transfer_hook.json frontend/public/idl/ 2>/dev/null || true"
     },
     "workspaces": [
         "sdk",
         "cli",
-        "admin-tui"
+        "admin-tui",
+        "frontend"
     ],
     "dependencies": {
         "@coral-xyz/anchor": "^0.31.1",

@@ -9,6 +9,7 @@ Reference implementation of the Solana Stablecoin Standard: a configurable Token
 - **TypeScript SDK** (`@stbr/sss-token`): Create/load stablecoins, operations, presets, compliance module.
 - **Admin CLI** (`sss-token`): Init, mint, burn, freeze, thaw, pause, blacklist, seize, status, supply, minters.
 - **Admin TUI** (`sss-tui`): Interactive terminal UI (Ink) for status, mint, burn, freeze/thaw, pause/unpause, blacklist, allowlist, seize.
+- **Example frontend** (`frontend`): Next.js app using the SDK for mint status, balance, and transfers (Wallet Standard + @solana/react-hooks).
 
 ## Quick start
 
@@ -53,6 +54,15 @@ yarn tui
 ```
 
 Use arrow keys and Enter to choose actions (Status, Mint, Burn, Freeze/Thaw, Pause/Unpause, Blacklist, Allowlist, Seize). Press **q** or **Esc** to go back. Requires `KEYPAIR_PATH` and `RPC_URL` (or defaults); `anchor build` must have been run so IDLs exist.
+
+**Example frontend (Next.js):**
+
+```bash
+anchor build && yarn copy-idl   # Copy IDL into frontend/public/idl
+yarn frontend:dev               # Start dev server
+```
+
+Open the app, connect a wallet, paste the mint address, and use the UI for status, balance, and transfers. See [frontend/README.md](frontend/README.md).
 
 ## Program IDs (localnet)
 
@@ -125,6 +135,7 @@ solana-stablecoin-standard/
 ├── sdk/                     # @stbr/sss-token (presets, core, compliance)
 ├── cli/                     # sss-token admin CLI
 ├── admin-tui/               # SSS Admin TUI (Ink) — status, mint, burn, freeze, pause, blacklist, allowlist, seize
+├── frontend/                # Example Next.js UI — wallet, mint status, balance, transfer (uses @stbr/sss-token)
 ├── backend/                 # Mint/burn + compliance REST API
 ├── tests/
 │   ├── context.ts           # Shared test context (provider, programs, keypairs)
