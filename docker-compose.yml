@@ -1,0 +1,24 @@
+# Run from repo root. Requires `anchor build` first so target/idl exists.
+# Optional: .env with RPC_URL, KEYPAIR_PATH or KEYPAIR_JSON, MINT_ADDRESS
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - RPC_URL=${RPC_URL:-http://host.docker.internal:8899}
+      - KEYPAIR_PATH=${KEYPAIR_PATH:-}
+      - KEYPAIR_JSON=${KEYPAIR_JSON:-}
+      - MINT_ADDRESS=${MINT_ADDRESS:-}
+      - WORKSPACE_ROOT=/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r)=>{ process.exit(r.statusCode===200?0:1); })"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

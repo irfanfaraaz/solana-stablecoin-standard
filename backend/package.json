@@ -1,0 +1,23 @@
+{
+  "name": "sss-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mint/burn and compliance API for Solana Stablecoin Standard",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "ts-node src/app.ts"
+  },
+  "dependencies": {
+    "@stbr/sss-token": "file:../sdk",
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.98.0",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
