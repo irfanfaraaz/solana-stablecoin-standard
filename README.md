@@ -8,6 +8,7 @@ Reference implementation of the Solana Stablecoin Standard: a configurable Token
 - **Transfer hook program** (`transfer_hook`): Validates transfers against blacklist when compliance is enabled.
 - **TypeScript SDK** (`@stbr/sss-token`): Create/load stablecoins, operations, presets, compliance module.
 - **Admin CLI** (`sss-token`): Init, mint, burn, freeze, thaw, pause, blacklist, seize, status, supply, minters.
+- **Admin TUI** (`sss-tui`): Interactive terminal UI (Ink) for status, mint, burn, freeze/thaw, pause/unpause, blacklist, allowlist, seize.
 
 ## Quick start
 
@@ -41,6 +42,17 @@ yarn cli supply -m <MINT_ADDRESS>
 ```
 
 Use `--rpc-url`, `--keypair`, and `--json` as needed. Run from repo root so `target/idl/*.json` and (optional) `Anchor.toml` resolve.
+
+**Interactive Admin TUI:**
+
+```bash
+# From repo root; set mint so the TUI can perform actions
+export SSS_MINT_ADDRESS=<MINT_ADDRESS>   # optional if only viewing status after selecting mint
+yarn tui
+# Or: cd admin-tui && yarn build && yarn start
+```
+
+Use arrow keys and Enter to choose actions (Status, Mint, Burn, Freeze/Thaw, Pause/Unpause, Blacklist, Allowlist, Seize). Press **q** or **Esc** to go back. Requires `KEYPAIR_PATH` and `RPC_URL` (or defaults); `anchor build` must have been run so IDLs exist.
 
 ## Program IDs (localnet)
 
@@ -112,6 +124,7 @@ solana-stablecoin-standard/
 │   └── transfer_hook/       # Blacklist check on transfer (SSS-2)
 ├── sdk/                     # @stbr/sss-token (presets, core, compliance)
 ├── cli/                     # sss-token admin CLI
+├── admin-tui/               # SSS Admin TUI (Ink) — status, mint, burn, freeze, pause, blacklist, allowlist, seize
 ├── backend/                 # Mint/burn + compliance REST API
 ├── tests/
 │   ├── context.ts           # Shared test context (provider, programs, keypairs)

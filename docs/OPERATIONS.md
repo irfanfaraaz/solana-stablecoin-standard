@@ -2,6 +2,19 @@
 
 Run the CLI from the **repo root** with `yarn cli` (or `node cli/dist/index.js`). Ensure `target/idl/*.json` exists (`anchor build`).
 
+## Admin TUI (interactive)
+
+From repo root:
+
+```bash
+export SSS_MINT_ADDRESS=<MINT_ADDRESS>   # required for mint/burn/freeze/etc.
+export KEYPAIR_PATH=~/.config/solana/id.json
+export RPC_URL=http://127.0.0.1:8899
+yarn tui
+```
+
+Or from `admin-tui`: `yarn build && yarn start` (or `yarn dev` with tsx). The TUI uses the same keypair and RPC as the CLI. Screens: **Status** (config, supply, roles), **Mint**, **Burn**, **Freeze**, **Thaw**, **Pause**, **Unpause**, **Blacklist** (SSS-2 add/remove), **Allowlist** (SSS-3 add/remove), **Seize** (SSS-2). Use arrow keys + Enter to select; **q** or **Esc** to go back.
+
 ## Global options
 
 | Option | Description | Default |

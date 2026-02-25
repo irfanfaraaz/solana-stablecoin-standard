@@ -7,11 +7,13 @@
         "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
         "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
         "test": "anchor test",
-        "cli": "node cli/dist/index.js"
+        "cli": "node cli/dist/index.js",
+        "tui": "node admin-tui/dist/index.js"
     },
     "workspaces": [
         "sdk",
-        "cli"
+        "cli",
+        "admin-tui"
     ],
     "dependencies": {
         "@coral-xyz/anchor": "^0.31.1",
