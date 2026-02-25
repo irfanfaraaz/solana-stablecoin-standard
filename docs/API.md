@@ -32,25 +32,38 @@ Response: `{ "signature": "<tx_sig>" }` or error payload. Service should validat
 
 All should be logged for audit (see COMPLIANCE.md).
 
+| Method | Path | Description | Query |
+|--------|------|-------------|-------|
+| GET | `/audit/export` | Audit trail export (CSV or JSON download) | `format=csv` or `format=json` (default) |
+
+Response: CSV with headers `time,event,mint,signature,...` or JSON array. `Content-Disposition: attachment`.
+
 ## Indexer / events
 
-- **Mechanism:** WebSocket or polling of program logs / account changes; store in DB (e.g. Postgres).
-- **Exposed as:** Optional GET endpoints for “recent events” or “transactions for mint” (pagination). Exact paths TBD.
+- **Mechanism:** Polling of stablecoin program account (`getSignaturesForAddress`); events stored in a JSON file under `DATA_DIR` (default: workspace root).
+- **Enable:** Set `INDEXER_ENABLED=true`. Optional `INDEXER_POLL_MS` (default 8000).
+- **Endpoint:**
+
+| Method | Path | Description | Query |
+|--------|------|-------------|-------|
+| GET | `/events` | Recent indexed events | `mint` (optional), `limit` (default 50, max 200), `before` (signature cursor) |
+
+Response: `{ "events": [ { "signature", "slot", "blockTime?", "mint?", "eventType?" } ] }`.
 
 ## Webhooks
 
-- **Configurable endpoints** (e.g. URL + secret per event type).
-- **Events:** e.g. `mint`, `burn`, `freeze`, `thaw`, `blacklist_add`, `blacklist_remove`, `seize`.
+- **Config:** Set `WEBHOOK_URL` for all events, or `WEBHOOK_URL_MINT`, `WEBHOOK_URL_BURN`, `WEBHOOK_URL_BLACKLIST_ADD`, `WEBHOOK_URL_BLACKLIST_REMOVE`, `WEBHOOK_URL_SEIZE` per event. Optional `WEBHOOK_SECRET` (sent as `X-Webhook-Signature` header).
+- **Events:** `mint`, `burn`, `blacklist_add`, `blacklist_remove`, `seize` (dispatched after each successful API call).
 - **Payload:** At least `event`, `mint`, `signature`, `slot`; event-specific fields (recipient, amount, address, etc.).
-- **Retry:** Exponential backoff and idempotency keys recommended.
+- **Retry:** 3 retries with exponential backoff (1s, 2s, 4s). Idempotency key: `X-Idempotency-Key` (signature).
 
 ## Docker
 
-When Phase E is implemented, `docker compose up` at repo root will start:
+`docker compose up` at repo root starts one container with:
 
 - Mint/burn service
-- Indexer (if applicable)
-- Compliance service (blacklist/seize + audit log)
-- Webhook dispatcher
+- Compliance API (blacklist/seize + audit log)
+- Indexer (when `INDEXER_ENABLED=true`)
+- Webhook dispatcher (when `WEBHOOK_URL` or per-event URLs are set)
 
-Env (e.g. `.env`): `RPC_URL`, keypair path or vault URL, database URL, webhook URLs. See backend directory when added.
+Env: `RPC_URL`, keypair path or vault URL, `INDEXER_ENABLED`, `INDEXER_POLL_MS`, `WEBHOOK_URL` / `WEBHOOK_URL_<EVENT>`, `WEBHOOK_SECRET`. See [backend README](../backend/README.md).

@@ -865,6 +865,32 @@ describe("solana-stablecoin-standard", () => {
         .rpc();
     });
 
+    it("freeze_account and thaw_account change token account state", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId,
+      );
+      sss2Sdk.mintAddress = mintPda;
+      const user1Ata = getAssociatedTokenAddressSync(
+        mintPda,
+        user1.publicKey,
+        true,
+        TOKEN_2022_PROGRAM_ID,
+      );
+      let acc = await getAccount(connection, user1Ata, "confirmed", TOKEN_2022_PROGRAM_ID);
+      expect(acc.isFrozen).to.be.false;
+
+      const freezeSig = await sss2Sdk.freezeAccount(authority.publicKey, user1.publicKey).then((tx) => tx.rpc());
+      await connection.confirmTransaction(freezeSig, "confirmed");
+      acc = await getAccount(connection, user1Ata, "confirmed", TOKEN_2022_PROGRAM_ID);
+      expect(acc.isFrozen).to.be.true;
+
+      const thawSig = await sss2Sdk.thawAccount(authority.publicKey, user1.publicKey).then((tx) => tx.rpc());
+      await connection.confirmTransaction(thawSig, "confirmed");
+      acc = await getAccount(connection, user1Ata, "confirmed", TOKEN_2022_PROGRAM_ID);
+      expect(acc.isFrozen).to.be.false;
+    });
+
     it("remove_from_blacklist allows transfer after removal", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",

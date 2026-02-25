@@ -8,6 +8,7 @@ import {
   Signer,
 } from "@solana/web3.js";
 import { Program, AnchorProvider, Wallet, Idl, BN } from "@coral-xyz/anchor";
+import { SSS_1_PRESET, SSS_2_PRESET } from "./presets";
 import {
   TOKEN_2022_PROGRAM_ID,
   getAssociatedTokenAddressSync,
@@ -52,6 +53,28 @@ export interface RoleAccountData {
   pauser: PublicKey;
   blacklister: PublicKey;
   seizer: PublicKey;
+}
+
+const DEFAULT_STABLECOIN_PROGRAM_ID = "3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM";
+const DEFAULT_TRANSFER_HOOK_PROGRAM_ID = "4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi";
+
+/** Options for createFromConnection: preset or full config, plus authority. */
+export interface CreateFromConnectionOptions {
+  authority: Keypair;
+  /** Preset name; when set, name/symbol/decimals (and optionally uri) are required. */
+  preset?: "sss-1" | "sss-2";
+  name: string;
+  symbol: string;
+  uri?: string;
+  decimals: number;
+  /** Full config; used when preset is not set. */
+  config?: StablecoinConfig;
+  /** Override program IDs (default: built-in devnet/local IDs). */
+  programIds?: { stablecoin?: string; transferHook?: string };
+  /** Path to directory containing stablecoin.json and transfer_hook.json (Node only; default: cwd/target/idl). */
+  idlPath?: string;
+  /** Pre-loaded IDL objects (for browser or when path not available). */
+  idl?: { stablecoin: Idl; transferHook?: Idl };
 }
 
 export class SolanaStablecoin {
@@ -416,6 +439,97 @@ export class SolanaStablecoin {
       blacklister: raw.blacklister,
       seizer: raw.seizer,
     };
+  }
+
+  /**
+   * Create a new stablecoin from a Connection and options (preset or config).
+   * Loads IDL from idlPath (Node) or uses provided idl; builds Program(s) and calls create().
+   * In browser, pass idl.stablecoin (and idl.transferHook for SSS-2) or use create(program, ...).
+   */
+  static async createFromConnection(
+    connection: Connection,
+    options: CreateFromConnectionOptions,
+  ): Promise<SolanaStablecoin> {
+    const programIds = options.programIds ?? {};
+    const stablecoinProgramId = new PublicKey(
+      programIds.stablecoin ?? DEFAULT_STABLECOIN_PROGRAM_ID,
+    );
+    const transferHookProgramId = new PublicKey(
+      programIds.transferHook ?? DEFAULT_TRANSFER_HOOK_PROGRAM_ID,
+    );
+
+    let stablecoinIdl: Idl;
+    let transferHookIdl: Idl | undefined;
+
+    if (options.idl) {
+      stablecoinIdl = options.idl.stablecoin;
+      transferHookIdl = options.idl.transferHook;
+    } else {
+      const isNode =
+        typeof process !== "undefined" &&
+        process.versions?.node &&
+        typeof require !== "undefined";
+      if (!isNode) {
+        throw new Error(
+          "createFromConnection requires idl option in browser; or use create(program, authority, config, transferHookProgram)",
+        );
+      }
+      const path = require("path") as typeof import("path");
+      const fs = require("fs") as typeof import("fs");
+      const base = options.idlPath ?? path.join(process.cwd(), "target", "idl");
+      const stablecoinPath = path.join(base, "stablecoin.json");
+      const transferHookPath = path.join(base, "transfer_hook.json");
+      if (!fs.existsSync(stablecoinPath)) {
+        throw new Error(`IDL not found at ${stablecoinPath}. Set idlPath or run from repo root.`);
+      }
+      stablecoinIdl = JSON.parse(fs.readFileSync(stablecoinPath, "utf-8")) as Idl;
+      if (fs.existsSync(transferHookPath)) {
+        transferHookIdl = JSON.parse(fs.readFileSync(transferHookPath, "utf-8")) as Idl;
+      }
+    }
+
+    const wallet = new Wallet(options.authority);
+    const provider = new AnchorProvider(connection, wallet, {
+      commitment: "confirmed",
+    });
+    (stablecoinIdl as any).address = stablecoinProgramId.toBase58();
+    const stablecoinProgram = new Program(
+      stablecoinIdl as any,
+      provider,
+    ) as Program<Stablecoin>;
+    let transferHookProgram: Program<TransferHook> | undefined;
+    if (transferHookIdl) {
+      (transferHookIdl as any).address = transferHookProgramId.toBase58();
+      transferHookProgram = new Program(transferHookIdl as any, provider) as Program<TransferHook>;
+    }
+
+    let config: StablecoinConfig;
+    if (options.config) {
+      config = options.config;
+    } else if (options.preset === "sss-1") {
+      config = {
+        name: options.name,
+        symbol: options.symbol,
+        uri: options.uri ?? "",
+        decimals: options.decimals,
+        ...SSS_1_PRESET,
+      };
+    } else {
+      config = {
+        name: options.name,
+        symbol: options.symbol,
+        uri: options.uri ?? "",
+        decimals: options.decimals,
+        ...SSS_2_PRESET,
+      };
+    }
+
+    return SolanaStablecoin.create(
+      stablecoinProgram,
+      options.authority.publicKey,
+      config,
+      transferHookProgram,
+    );
   }
 
   /**

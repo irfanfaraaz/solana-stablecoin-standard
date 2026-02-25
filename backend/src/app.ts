@@ -1,12 +1,15 @@
 /**
- * SSS Backend: mint/burn + compliance REST API and health check.
+ * SSS Backend: mint/burn + compliance REST API, health check, indexer, and audit.
  * Run from repo root so IDL path (target/idl) and SDK (file:../sdk) resolve.
- * Env: RPC_URL, KEYPAIR_PATH (or KEYPAIR_JSON base64), MINT_ADDRESS (optional default), PORT.
+ * Env: RPC_URL, KEYPAIR_PATH (or KEYPAIR_JSON base64), MINT_ADDRESS (optional default), PORT,
+ * INDEXER_ENABLED, INDEXER_POLL_MS.
  */
 import express, { Request, Response } from "express";
 import * as fs from "fs";
 import * as path from "path";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { getEvents, loadEvents, startIndexer } from "./events";
+import { dispatchWebhook } from "./webhook";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { SolanaStablecoin, SSSComplianceModule } from "@stbr/sss-token";
 
@@ -66,6 +69,16 @@ function logAudit(event: string, payload: Record<string, unknown>) {
   if (auditLog.length > 10000) auditLog.shift();
 }
 
+async function getSlotForSignature(signature: string): Promise<number | undefined> {
+  try {
+    const conn = new Connection(RPC_URL);
+    const status = await conn.getSignatureStatus(signature);
+    return status?.context?.slot as number | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const app = express();
 app.use(express.json());
 
@@ -93,6 +106,8 @@ app.post("/mint", async (req: Request, res: Response) => {
     const tx = await sdk.mint(keypair.publicKey, recipientPubkey, amount);
     const sig = await tx.rpc();
     logAudit("mint", { mint: mint.toBase58(), recipient, amount, signature: sig });
+    const slot = await getSlotForSignature(sig);
+    dispatchWebhook("mint", { event: "mint", mint: mint.toBase58(), signature: sig, slot, recipient, amount });
     res.json({ signature: sig });
   } catch (e: any) {
     res.status(400).json({ error: e?.message || String(e) });
@@ -111,6 +126,8 @@ app.post("/burn", async (req: Request, res: Response) => {
     const tx = await sdk.burn(keypair.publicKey, from, amount);
     const sig = await tx.rpc();
     logAudit("burn", { mint: mint.toBase58(), amount, from: from.toBase58(), signature: sig });
+    const slot = await getSlotForSignature(sig);
+    dispatchWebhook("burn", { event: "burn", mint: mint.toBase58(), signature: sig, slot, amount, from: from.toBase58() });
     res.json({ signature: sig });
   } catch (e: any) {
     res.status(400).json({ error: e?.message || String(e) });
@@ -128,6 +145,8 @@ app.post("/blacklist/add", async (req: Request, res: Response) => {
     const tx = await compliance.addToBlacklist(keypair.publicKey, address, reason);
     const sig = await tx.rpc();
     logAudit("blacklist_add", { mint: mint.toBase58(), address: addressStr, reason, signature: sig });
+    const slot = await getSlotForSignature(sig);
+    dispatchWebhook("blacklist_add", { event: "blacklist_add", mint: mint.toBase58(), signature: sig, slot, address: addressStr, reason });
     res.json({ signature: sig });
   } catch (e: any) {
     res.status(400).json({ error: e?.message || String(e) });
@@ -145,6 +164,8 @@ app.post("/blacklist/remove", async (req: Request, res: Response) => {
     const tx = await compliance.removeFromBlacklist(keypair.publicKey, address);
     const sig = await tx.rpc();
     logAudit("blacklist_remove", { mint: mint.toBase58(), address: addressStr, signature: sig });
+    const slot = await getSlotForSignature(sig);
+    dispatchWebhook("blacklist_remove", { event: "blacklist_remove", mint: mint.toBase58(), signature: sig, slot, address: addressStr });
     res.json({ signature: sig });
   } catch (e: any) {
     res.status(400).json({ error: e?.message || String(e) });
@@ -169,6 +190,8 @@ app.post("/seize", async (req: Request, res: Response) => {
     const tx = await compliance.seize(keypair.publicKey, from, treasury, amount);
     const sig = await tx.rpc();
     logAudit("seize", { mint: mint.toBase58(), from: fromStr, treasury: treasuryStr, amount, signature: sig });
+    const slot = await getSlotForSignature(sig);
+    dispatchWebhook("seize", { event: "seize", mint: mint.toBase58(), signature: sig, slot, from: fromStr, treasury: treasuryStr, amount });
     res.json({ signature: sig });
   } catch (e: any) {
     res.status(400).json({ error: e?.message || String(e) });
@@ -179,8 +202,48 @@ app.get("/audit", (_req: Request, res: Response) => {
   res.json({ events: auditLog });
 });
 
+app.get("/audit/export", (req: Request, res: Response) => {
+  const format = (req.query.format as string)?.toLowerCase() || "json";
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  if (format === "csv") {
+    const header = "time,event,mint,signature,recipient,amount,from,address,reason,treasury\n";
+    const esc = (v: unknown) => (v != null ? String(v).replace(/"/g, '""') : "");
+    const rows = auditLog.map((e) => {
+      const p = e.payload as Record<string, unknown>;
+      return `"${e.time}","${e.event}","${esc(p?.mint)}","${esc(p?.signature)}","${esc(p?.recipient)}","${esc(p?.amount)}","${esc(p?.from)}","${esc(p?.address)}","${esc(p?.reason)}","${esc(p?.treasury)}"`;
+    });
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="audit-${ts}.csv"`);
+    res.send(header + rows.join("\n"));
+  } else {
+    res.setHeader("Content-Disposition", `attachment; filename="audit-${ts}.json"`);
+    res.json(auditLog);
+  }
+});
+
+app.get("/events", (req: Request, res: Response) => {
+  try {
+    loadEvents();
+    const mint = typeof req.query.mint === "string" ? req.query.mint : undefined;
+    const limit = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : 50;
+    const before = typeof req.query.before === "string" ? req.query.before : undefined;
+    const list = getEvents({ mint, limit: isNaN(limit) ? 50 : limit, before });
+    res.json({ events: list });
+  } catch (e: any) {
+    res.status(500).json({ error: e?.message || String(e) });
+  }
+});
+
 const server = app.listen(PORT, () => {
   console.log(`SSS backend listening on port ${PORT}; RPC=${RPC_URL}`);
+  const indexerEnabled = process.env.INDEXER_ENABLED === "true" || process.env.INDEXER_ENABLED === "1";
+  if (indexerEnabled) {
+    const conn = new Connection(RPC_URL);
+    const programId = new PublicKey(PROGRAM_IDS.stablecoin);
+    const pollMs = parseInt(process.env.INDEXER_POLL_MS || "8000", 10);
+    startIndexer(conn, programId, isNaN(pollMs) ? 8000 : pollMs);
+    console.log(`Indexer started (poll ${pollMs}ms)`);
+  }
 });
 
 server.on("error", (err) => {

@@ -31,6 +31,6 @@ The backend can expose:
 
 - **Blacklist management API** (e.g. add/remove with reason and audit log).
 - **Seize API** (authorized seizer only; log from/treasury/amount).
-- **Audit export** (e.g. CSV/JSON of blacklist and seize events with timestamps and signers).
+- **Audit export** (e.g. CSV/JSON of blacklist and seize events with timestamps and signers). The backend implements `GET /audit/export?format=csv|json` for download.
 
-See [API.md](API.md) for endpoint shapes when the backend is implemented.
+See [API.md](API.md) for endpoint shapes.

@@ -39,7 +39,23 @@ const config: StablecoinConfig = {
 
 ## Create and load
 
-**Create** (initialize a new stablecoin; for SSS-2 also inits transfer-hook extra-account-metas):
+**Create from Connection** (Node: loads IDL from `target/idl`; matches req example):
+
+```ts
+import { SolanaStablecoin } from "@stbr/sss-token";
+
+const stable = await SolanaStablecoin.createFromConnection(connection, {
+  preset: "sss-2",
+  name: "My Stablecoin",
+  symbol: "MYUSD",
+  decimals: 6,
+  authority: adminKeypair,
+});
+// Or preset "sss-1", or pass config: { ... } for full custom.
+// In browser, pass idl: { stablecoin, transferHook? } or use create(program, ...).
+```
+
+**Create** (when you already have Program instances):
 
 ```ts
 const sdk = await SolanaStablecoin.create(
