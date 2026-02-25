@@ -18,40 +18,72 @@ pub mod transfer_hook {
 
     pub fn initialize_extra_account_meta_list(
         ctx: Context<InitializeExtraAccountMetaList>,
+        enable_allowlist: bool,
     ) -> Result<()> {
         let mint = ctx.accounts.mint.key();
 
-        // Extra accounts required for transfer validation:
-        // Final execute account layout expected by this hook:
-        // 0 source, 1 mint, 2 destination, 3 authority, 4 extra_meta_list,
-        // 5 stablecoin_program, 6 source_blacklist, 7 dest_blacklist
-        let account_metas = vec![
+        // Extra accounts required for transfer validation.
+        // Base (SSS-2): 5 stablecoin_program, 6 source_blacklist, 7 dest_blacklist.
+        // With allowlist (SSS-3): + 6 config, 7 source_blacklist, 8 dest_blacklist, 9 source_allowlist, 10 dest_allowlist.
+        let mut account_metas = vec![
             ExtraAccountMeta::new_with_pubkey(&stablecoin::ID, false, false)?,
-            // Source Blacklist PDA in the stablecoin program:
-            // ["blacklist", mint, owner(source_token_account)]
+            // Source Blacklist PDA: ["blacklist", mint, owner(source)]
             ExtraAccountMeta::new_external_pda_with_seeds(
-                5, // stablecoin program id index
+                5,
                 &[
                     Seed::Literal { bytes: b"blacklist".to_vec() },
-                    Seed::AccountKey { index: 1 }, // Mint
-                    Seed::AccountData { account_index: 0, data_index: 32, length: 32 }, // Owner of Source
+                    Seed::AccountKey { index: 1 },
+                    Seed::AccountData { account_index: 0, data_index: 32, length: 32 },
                 ],
-                false, // is_signer
-                false, // is_writable
+                false,
+                false,
             )?,
-            // Destination Blacklist PDA in the stablecoin program:
-            // ["blacklist", mint, owner(destination_token_account)]
+            // Destination Blacklist PDA: ["blacklist", mint, owner(dest)]
             ExtraAccountMeta::new_external_pda_with_seeds(
-                5, // stablecoin program id index
+                5,
                 &[
                     Seed::Literal { bytes: b"blacklist".to_vec() },
-                    Seed::AccountKey { index: 1 }, // Mint
-                    Seed::AccountData { account_index: 2, data_index: 32, length: 32 }, // Owner of Dest
+                    Seed::AccountKey { index: 1 },
+                    Seed::AccountData { account_index: 2, data_index: 32, length: 32 },
                 ],
                 false,
                 false,
             )?,
         ];
+
+        if enable_allowlist {
+            // Config PDA: ["config", mint] — read enable_allowlist in execute (index 6)
+            account_metas.push(ExtraAccountMeta::new_external_pda_with_seeds(
+                5,
+                &[
+                    Seed::Literal { bytes: b"config".to_vec() },
+                    Seed::AccountKey { index: 1 },
+                ],
+                false,
+                false,
+            )?);
+            // Source allowlist PDA (index 7), dest allowlist PDA (index 8)
+            account_metas.push(ExtraAccountMeta::new_external_pda_with_seeds(
+                5,
+                &[
+                    Seed::Literal { bytes: b"allowlist".to_vec() },
+                    Seed::AccountKey { index: 1 },
+                    Seed::AccountData { account_index: 0, data_index: 32, length: 32 },
+                ],
+                false,
+                false,
+            )?);
+            account_metas.push(ExtraAccountMeta::new_external_pda_with_seeds(
+                5,
+                &[
+                    Seed::Literal { bytes: b"allowlist".to_vec() },
+                    Seed::AccountKey { index: 1 },
+                    Seed::AccountData { account_index: 2, data_index: 32, length: 32 },
+                ],
+                false,
+                false,
+            )?);
+        }
 
         let rent = Rent::get()?;
         let space = ExtraAccountMetaList::size_of(account_metas.len())?;
@@ -108,6 +140,9 @@ pub mod transfer_hook {
     }
 }
 
+/// AllowlistEntry.is_allowed offset (8 discriminator + bump + wallet).
+const ALLOWLIST_IS_ALLOWED_OFFSET: usize = 8 + 1 + 32; // 41
+
 pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
     if accounts.len() < 8 {
         return Err(ProgramError::NotEnoughAccountKeys.into());
@@ -116,7 +151,7 @@ pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
     let mint_info = &accounts[1];
     let authority_info = &accounts[3];
 
-    // Identify Admin bypass (Seize)
+    // Admin bypass (Seize)
     let (config_pda, _bump) = Pubkey::find_program_address(
         &[b"config", mint_info.key().as_ref()],
         &stablecoin::ID,
@@ -127,14 +162,52 @@ pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
         return Ok(());
     }
 
-    // Accounts[6]/[7] are blacklist PDAs resolved by ExtraAccountMetaList.
-    for (label, acc) in [("source", &accounts[6]), ("destination", &accounts[7])] {
+    // Blacklist: indices 6 and 7 (SSS-2). With allowlist (SSS-3): still 6 and 7, then 8=config, 9=source_allowlist, 10=dest_allowlist.
+    let (source_blacklist_ix, dest_blacklist_ix) = (6, 7);
+    for (label, acc) in [
+        ("source", &accounts[source_blacklist_ix]),
+        ("destination", &accounts[dest_blacklist_ix]),
+    ] {
         if !acc.data_is_empty() {
             let data = acc.try_borrow_data()?;
-            // Anchor account layout: [8-byte discriminator][bump:1][account:32][is_blacklisted:1]
             if data.len() >= 42 && data[41] != 0 {
                 msg!("Execute - Blocked {} account: {}", label, acc.key());
                 return Err(TransferHookError::Blacklisted.into());
+            }
+        }
+    }
+
+    // SSS-3: when allowlist is enabled, require source and dest to be on allowlist.
+    // Token-2022 CPI account layouts observed:
+    // - len 11: [source, mint, dest, authority, extra_meta_list, stablecoin, s_bl, d_bl, config, s_al, d_al]
+    // - len 10: [source, mint, dest, authority, stablecoin, s_bl, d_bl, config, s_al, d_al]
+    if accounts.len() >= 10 {
+        let (config_ix, source_al_ix, dest_al_ix) = if accounts.len() >= 11 {
+            (8, 9, 10)
+        } else {
+            (7, 8, 9)
+        };
+        let config_acc = &accounts[config_ix];
+        let source_allowlist_acc = &accounts[source_al_ix];
+        let dest_allowlist_acc = &accounts[dest_al_ix];
+        if !config_acc.data_is_empty() {
+            let config_data = config_acc.try_borrow_data()?;
+            let mut config_data_slice: &[u8] = config_data.as_ref();
+            let config = stablecoin::state::StablecoinConfig::try_deserialize(&mut config_data_slice)
+                .map_err(|_| ProgramError::InvalidAccountData)?;
+            if config.enable_allowlist {
+                // If enable_allowlist is true: require both source and destination entries to be allowed.
+                for (label, acc) in [("source", source_allowlist_acc), ("destination", dest_allowlist_acc)] {
+                    if acc.data_is_empty() {
+                        msg!("Execute - Allowlist required but {} not on allowlist", label);
+                        return Err(TransferHookError::NotOnAllowlist.into());
+                    }
+                    let data = acc.try_borrow_data()?;
+                    if data.len() <= ALLOWLIST_IS_ALLOWED_OFFSET || data[ALLOWLIST_IS_ALLOWED_OFFSET] == 0 {
+                        msg!("Execute - {} wallet not allowed", label);
+                        return Err(TransferHookError::NotOnAllowlist.into());
+                    }
+                }
             }
         }
     }
@@ -162,4 +235,6 @@ pub struct InitializeExtraAccountMetaList<'info> {
 pub enum TransferHookError {
     #[msg("Account is blacklisted")]
     Blacklisted,
+    #[msg("Account is not on the allowlist")]
+    NotOnAllowlist,
 }

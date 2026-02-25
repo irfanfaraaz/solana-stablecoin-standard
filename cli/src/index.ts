@@ -14,6 +14,7 @@ import {
   SSSComplianceModule,
   SSS_1_PRESET,
   SSS_2_PRESET,
+  SSS_3_PRESET,
   type StablecoinConfig,
 } from "@stbr/sss-token";
 
@@ -96,7 +97,7 @@ program
 program
   .command("init")
   .description("Initialize a new stablecoin")
-  .option("-p, --preset <preset>", "Preset: sss-1 or sss-2", "sss-2")
+  .option("-p, --preset <preset>", "Preset: sss-1, sss-2, or sss-3", "sss-2")
   .option("-c, --custom <path>", "Path to custom config TOML")
   .requiredOption("-n, --name <name>", "Token name (required when not using --custom)")
   .option("-s, --symbol <symbol>", "Token symbol", "SUSD")
@@ -112,7 +113,10 @@ program
       const custom = parseTomlConfig(opts.custom);
       config = { name: custom.name, symbol: custom.symbol, uri: custom.uri || "", decimals: custom.decimals, enablePermanentDelegate: !!custom.enablePermanentDelegate, enableTransferHook: !!custom.enableTransferHook, defaultAccountFrozen: !!custom.defaultAccountFrozen };
     } else {
-      const preset = opts.preset === "sss-1" ? SSS_1_PRESET : SSS_2_PRESET;
+      const preset =
+        opts.preset === "sss-1" ? SSS_1_PRESET
+        : opts.preset === "sss-3" ? SSS_3_PRESET
+        : SSS_2_PRESET;
       config = { name: opts.name, symbol: opts.symbol, uri: opts.uri, decimals: parseInt(opts.decimals, 10), ...preset };
     }
     const sdk = new SolanaStablecoin(stablecoinProgram as any, undefined, (transferHookProgram || undefined) as any);
@@ -122,7 +126,7 @@ program
     sdk.mintAddress = mint;
     if (config.enableTransferHook && transferHookProgram) {
       const compliance = new SSSComplianceModule(sdk);
-      const hookTx = await compliance.initializeTransferHookExtraAccounts(keypair.publicKey);
+      const hookTx = await compliance.initializeTransferHookExtraAccounts(keypair.publicKey, config.enableAllowlist ?? false);
       const hookSig = await hookTx.rpc();
       output({ mint: mint.toBase58(), configPda: SolanaStablecoin.getConfigPDA(mint, stablecoinProgram.programId).toBase58(), signature: sig, transferHookInitSignature: hookSig }, (program.opts() as any).json);
     } else {
@@ -299,6 +303,33 @@ program
     const tx = await compliance.removeFromBlacklist(keypair.publicKey, new PublicKey(address));
     const sig = await tx.rpc();
     output({ signature: sig }, (program.opts() as any).json);
+  }));
+
+program
+  .command("allowlist")
+  .description("SSS-3 allowlist commands (master authority only)")
+  .requiredOption("-m, --mint <address>", "Mint address")
+  .addCommand(new Command("add").argument("<wallet>").action(async (walletAddress, _opts, parent) => {
+    const keypair = loadKeypair((program.opts() as any).keypair);
+    const connection = getConnection((program.opts() as any).rpcUrl);
+    const wallet = new Wallet(keypair);
+    const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
+    const mint = new PublicKey(parent.opts().mint);
+    const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
+    const tx = await sdk.addToAllowlist(keypair.publicKey, new PublicKey(walletAddress));
+    const sig = await tx.rpc();
+    output({ signature: sig, wallet: walletAddress }, (program.opts() as any).json);
+  }))
+  .addCommand(new Command("remove").argument("<wallet>").action(async (walletAddress, _opts, parent) => {
+    const keypair = loadKeypair((program.opts() as any).keypair);
+    const connection = getConnection((program.opts() as any).rpcUrl);
+    const wallet = new Wallet(keypair);
+    const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
+    const mint = new PublicKey(parent.opts().mint);
+    const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
+    const tx = await sdk.removeFromAllowlist(keypair.publicKey, new PublicKey(walletAddress));
+    const sig = await tx.rpc();
+    output({ signature: sig, wallet: walletAddress }, (program.opts() as any).json);
   }));
 
 program

@@ -112,12 +112,18 @@ pub struct Seize<'info> {
     pub transfer_hook_program: UncheckedAccount<'info>,
     /// CHECK: Extra account meta list for the transfer hook
     pub extra_meta_list: UncheckedAccount<'info>,
-    /// CHECK: Stablecoin program ID (Index 4 in hook)
+    /// CHECK: Stablecoin program ID (Index 5 in hook)
     pub stablecoin_program: UncheckedAccount<'info>,
-    /// CHECK: Source blacklist entry (Index 5 in hook)
+    /// CHECK: Source blacklist entry (Index 6 in hook)
     pub source_blacklist: UncheckedAccount<'info>,
-    /// CHECK: Destination blacklist entry (Index 6 in hook)
+    /// CHECK: Destination blacklist entry (Index 7 in hook)
     pub dest_blacklist: UncheckedAccount<'info>,
+    /// CHECK: Config PDA (Index 8, SSS-3 only). Required when config.enable_allowlist.
+    pub config_allowlist: UncheckedAccount<'info>,
+    /// CHECK: Source allowlist entry (Index 9, SSS-3 only)
+    pub source_allowlist: UncheckedAccount<'info>,
+    /// CHECK: Dest allowlist entry (Index 10, SSS-3 only)
+    pub dest_allowlist: UncheckedAccount<'info>,
 }
 
 pub fn handle_add_to_blacklist(ctx: Context<ManageBlacklist>) -> Result<()> {
@@ -193,20 +199,22 @@ pub fn handle_seize(ctx: Context<Seize>, amount: u64) -> Result<()> {
     let seeds = &[StablecoinConfig::SEED_PREFIX, mint_key, &[bump]];
     let signer = &[&seeds[..]];
 
-    let account_metas = vec![
+    let mut account_metas = vec![
         AccountMeta::new(ctx.accounts.from_account.key(), false),
         AccountMeta::new_readonly(ctx.accounts.mint.key(), false),
         AccountMeta::new(ctx.accounts.to_account.key(), false),
         AccountMeta::new_readonly(ctx.accounts.config.key(), true), // Authority is signer
-        // Validation account required for transfer-hook resolution.
         AccountMeta::new_readonly(ctx.accounts.extra_meta_list.key(), false),
-        // Extra accounts consumed by the transfer-hook Execute call.
         AccountMeta::new_readonly(ctx.accounts.stablecoin_program.key(), false),
         AccountMeta::new_readonly(ctx.accounts.source_blacklist.key(), false),
         AccountMeta::new_readonly(ctx.accounts.dest_blacklist.key(), false),
-        // Hook program account is still required by Token-2022.
-        AccountMeta::new_readonly(ctx.accounts.transfer_hook_program.key(), false),
     ];
+    if ctx.accounts.config.enable_allowlist {
+        account_metas.push(AccountMeta::new_readonly(ctx.accounts.config_allowlist.key(), false));
+        account_metas.push(AccountMeta::new_readonly(ctx.accounts.source_allowlist.key(), false));
+        account_metas.push(AccountMeta::new_readonly(ctx.accounts.dest_allowlist.key(), false));
+    }
+    account_metas.push(AccountMeta::new_readonly(ctx.accounts.transfer_hook_program.key(), false));
 
     let ix = spl_token_2022::instruction::transfer_checked(
         &ctx.accounts.token_program.key(),
@@ -227,21 +235,24 @@ pub fn handle_seize(ctx: Context<Seize>, amount: u64) -> Result<()> {
         manual_ix.accounts.len()
     );
 
-    anchor_lang::solana_program::program::invoke_signed(
-        &manual_ix,
-        &[
-            ctx.accounts.from_account.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            ctx.accounts.to_account.to_account_info(),
-            ctx.accounts.config.to_account_info(),
-            ctx.accounts.extra_meta_list.to_account_info(),
-            ctx.accounts.stablecoin_program.to_account_info(),
-            ctx.accounts.source_blacklist.to_account_info(),
-            ctx.accounts.dest_blacklist.to_account_info(),
-            ctx.accounts.transfer_hook_program.to_account_info(),
-        ],
-        signer,
-    )?;
+    let mut hook_accounts: Vec<_> = vec![
+        ctx.accounts.from_account.to_account_info(),
+        ctx.accounts.mint.to_account_info(),
+        ctx.accounts.to_account.to_account_info(),
+        ctx.accounts.config.to_account_info(),
+        ctx.accounts.extra_meta_list.to_account_info(),
+        ctx.accounts.stablecoin_program.to_account_info(),
+        ctx.accounts.source_blacklist.to_account_info(),
+        ctx.accounts.dest_blacklist.to_account_info(),
+    ];
+    if ctx.accounts.config.enable_allowlist {
+        hook_accounts.push(ctx.accounts.config_allowlist.to_account_info());
+        hook_accounts.push(ctx.accounts.source_allowlist.to_account_info());
+        hook_accounts.push(ctx.accounts.dest_allowlist.to_account_info());
+    }
+    hook_accounts.push(ctx.accounts.transfer_hook_program.to_account_info());
+
+    anchor_lang::solana_program::program::invoke_signed(&manual_ix, &hook_accounts, signer)?;
 
     Ok(())
 }

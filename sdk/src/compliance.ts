@@ -122,6 +122,17 @@ export class SSSComplianceModule {
       this.sdk.transferHookProgram!.programId,
     );
 
+    const sourceAllowlist = SolanaStablecoin.getAllowlistEntryPDA(
+      mint,
+      from,
+      this.sdk.program.programId,
+    );
+    const destAllowlist = SolanaStablecoin.getAllowlistEntryPDA(
+      mint,
+      to,
+      this.sdk.program.programId,
+    );
+
     return this.sdk.program.methods.seize(new BN(amount)).accounts({
       seizer: authority,
       fromAccount: sourceAta,
@@ -135,10 +146,16 @@ export class SSSComplianceModule {
       stablecoinProgram: this.sdk.program.programId,
       sourceBlacklist,
       destBlacklist,
+      configAllowlist: config,
+      sourceAllowlist,
+      destAllowlist,
     } as any);
   }
 
-  async initializeTransferHookExtraAccounts(authority: PublicKey) {
+  async initializeTransferHookExtraAccounts(
+    authority: PublicKey,
+    enableAllowlist: boolean = false,
+  ) {
     if (!this.sdk.transferHookProgram) {
       throw new Error("Transfer Hook Program not provided to SDK");
     }
@@ -151,12 +168,11 @@ export class SSSComplianceModule {
     );
 
     return this.sdk.transferHookProgram.methods
-      .initializeExtraAccountMetaList()
+      .initializeExtraAccountMetaList(enableAllowlist)
       .accounts({
         payer: authority,
         extraAccountMetaList,
         mint,
-        tokenProgram: TOKEN_2022_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       } as any);
   }

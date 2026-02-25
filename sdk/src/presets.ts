@@ -19,3 +19,15 @@ export const SSS_2_PRESET: Omit<
   enableTransferHook: true,
   defaultAccountFrozen: false,
 };
+
+// SSS-3 (Standard Stablecoin Spec 3): Confidential transfers + allowlists (POC)
+export const SSS_3_PRESET: Omit<
+  StablecoinConfig,
+  "name" | "symbol" | "uri" | "decimals"
+> = {
+  enablePermanentDelegate: true,
+  enableTransferHook: true,
+  defaultAccountFrozen: false,
+  enableConfidentialTransfers: true,
+  enableAllowlist: true,
+};

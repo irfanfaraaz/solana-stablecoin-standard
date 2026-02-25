@@ -4,7 +4,9 @@ use anchor_lang::system_program;
 use anchor_spl::{
     token_2022::spl_token_2022::{
         extension::{
-            transfer_hook::instruction::initialize as initialize_transfer_hook, ExtensionType,
+            confidential_transfer::instruction::initialize_mint as initialize_confidential_transfer_mint,
+            transfer_hook::instruction::initialize as initialize_transfer_hook,
+            ExtensionType,
         },
         instruction::{initialize_mint2, initialize_permanent_delegate},
         state::Mint as SplMint,
@@ -72,6 +74,7 @@ pub fn handle_initialize(
     enable_transfer_hook: bool,
     default_account_frozen: bool,
     enable_confidential_transfers: bool,
+    enable_allowlist: bool,
     transfer_hook_program_id: Option<Pubkey>,
 ) -> Result<()> {
     let mut extension_types = vec![];
@@ -80,6 +83,9 @@ pub fn handle_initialize(
     }
     if enable_transfer_hook {
         extension_types.push(ExtensionType::TransferHook);
+    }
+    if enable_confidential_transfers {
+        extension_types.push(ExtensionType::ConfidentialTransferMint);
     }
 
     let mint_size = ExtensionType::try_calculate_account_len::<SplMint>(&extension_types)
@@ -137,6 +143,21 @@ pub fn handle_initialize(
             )?;
         }
 
+        if enable_confidential_transfers {
+            let ix = initialize_confidential_transfer_mint(
+                ctx.accounts.token_program.key,
+                ctx.accounts.mint.key,
+                Some(ctx.accounts.config.key()),
+                true, // auto_approve_new_accounts
+                None, // auditor_elgamal_pubkey
+            )
+            .map_err(|_| StablecoinError::ConfidentialTransfersNotEnabled)?;
+            invoke(
+                &ix,
+                &[ctx.accounts.mint.to_account_info()],
+            )?;
+        }
+
         invoke(
             &initialize_mint2(
                 ctx.accounts.token_program.key,
@@ -165,6 +186,7 @@ pub fn handle_initialize(
     config.enable_transfer_hook = enable_transfer_hook;
     config.default_account_frozen = default_account_frozen;
     config.enable_confidential_transfers = enable_confidential_transfers;
+    config.enable_allowlist = enable_allowlist;
 
     let roles = &mut ctx.accounts.role_account;
     roles.bump = ctx.bumps.role_account;

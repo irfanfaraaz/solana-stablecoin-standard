@@ -8,7 +8,7 @@ import {
   Signer,
 } from "@solana/web3.js";
 import { Program, AnchorProvider, Wallet, Idl, BN } from "@coral-xyz/anchor";
-import { SSS_1_PRESET, SSS_2_PRESET } from "./presets";
+import { SSS_1_PRESET, SSS_2_PRESET, SSS_3_PRESET } from "./presets";
 import {
   TOKEN_2022_PROGRAM_ID,
   getAssociatedTokenAddressSync,
@@ -28,6 +28,10 @@ export interface StablecoinConfig {
   enableTransferHook: boolean;
   /** Policy flag: new accounts start frozen when true. Stored on-chain only. */
   defaultAccountFrozen?: boolean;
+  /** SSS-3: enable Token-2022 confidential transfer mint extension. */
+  enableConfidentialTransfers?: boolean;
+  /** SSS-3: restrict transfers to allowlisted wallets when enabled. */
+  enableAllowlist?: boolean;
 }
 
 /** On-chain config account (decimals, pause, flags, name, symbol, uri). */
@@ -44,6 +48,7 @@ export interface StablecoinConfigAccount {
   enableTransferHook: boolean;
   defaultAccountFrozen: boolean;
   enableConfidentialTransfers: boolean;
+  enableAllowlist: boolean;
 }
 
 /** On-chain role account (burner, pauser, blacklister, seizer). */
@@ -62,7 +67,7 @@ const DEFAULT_TRANSFER_HOOK_PROGRAM_ID = "4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2T
 export interface CreateFromConnectionOptions {
   authority: Keypair;
   /** Preset name; when set, name/symbol/decimals (and optionally uri) are required. */
-  preset?: "sss-1" | "sss-2";
+  preset?: "sss-1" | "sss-2" | "sss-3";
   name: string;
   symbol: string;
   uri?: string;
@@ -136,6 +141,17 @@ export class SolanaStablecoin {
     )[0];
   }
 
+  static getAllowlistEntryPDA(
+    mint: PublicKey,
+    wallet: PublicKey,
+    programId: PublicKey,
+  ): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("allowlist"), mint.toBuffer(), wallet.toBuffer()],
+      programId,
+    )[0];
+  }
+
   static getExtraAccountMetaListPDA(
     mint: PublicKey,
     transferHookProgramId: PublicKey,
@@ -176,7 +192,8 @@ export class SolanaStablecoin {
         config.enablePermanentDelegate,
         config.enableTransferHook,
         config.defaultAccountFrozen ?? false,
-        false, // enableConfidentialTransfers
+        config.enableConfidentialTransfers ?? false,
+        config.enableAllowlist ?? false,
         transferHookProgramId || null,
       )
       .accounts({
@@ -297,6 +314,48 @@ export class SolanaStablecoin {
       mint,
       tokenAccount: ataToThaw,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
+    } as any);
+  }
+
+  /** SSS-3: Add a wallet to the allowlist (master authority only). */
+  async addToAllowlist(authority: PublicKey, wallet: PublicKey) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const config = SolanaStablecoin.getConfigPDA(mint, this.program.programId);
+    const allowlistEntry = SolanaStablecoin.getAllowlistEntryPDA(
+      mint,
+      wallet,
+      this.program.programId,
+    );
+
+    return this.program.methods.addToAllowlist().accounts({
+      authority,
+      config,
+      mint,
+      wallet,
+      allowlistEntry,
+      systemProgram: SystemProgram.programId,
+    } as any);
+  }
+
+  /** SSS-3: Remove a wallet from the allowlist (master authority only). */
+  async removeFromAllowlist(authority: PublicKey, wallet: PublicKey) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const config = SolanaStablecoin.getConfigPDA(mint, this.program.programId);
+    const allowlistEntry = SolanaStablecoin.getAllowlistEntryPDA(
+      mint,
+      wallet,
+      this.program.programId,
+    );
+
+    return this.program.methods.removeFromAllowlist().accounts({
+      authority,
+      config,
+      mint,
+      wallet,
+      allowlistEntry,
+      systemProgram: SystemProgram.programId,
     } as any);
   }
 
@@ -421,6 +480,7 @@ export class SolanaStablecoin {
       enableTransferHook: raw.enableTransferHook,
       defaultAccountFrozen: raw.defaultAccountFrozen ?? false,
       enableConfidentialTransfers: raw.enableConfidentialTransfers,
+      enableAllowlist: raw.enableAllowlist ?? false,
     };
   }
 
@@ -514,6 +574,14 @@ export class SolanaStablecoin {
         decimals: options.decimals,
         ...SSS_1_PRESET,
       };
+    } else if (options.preset === "sss-3") {
+      config = {
+        name: options.name,
+        symbol: options.symbol,
+        uri: options.uri ?? "",
+        decimals: options.decimals,
+        ...SSS_3_PRESET,
+      };
     } else {
       config = {
         name: options.name,
@@ -567,6 +635,7 @@ export class SolanaStablecoin {
       );
       const hookInit = await compliance.initializeTransferHookExtraAccounts(
         authority,
+        config.enableAllowlist ?? false,
       );
       await hookInit.rpc();
     }

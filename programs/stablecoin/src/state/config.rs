@@ -18,6 +18,7 @@ pub struct StablecoinConfig {
     pub enable_transfer_hook: bool,
     pub default_account_frozen: bool,
     pub enable_confidential_transfers: bool, // SSS-3 POC
+    pub enable_allowlist: bool,               // SSS-3: restrict transfers to allowed wallets when enabled
 }
 
 impl StablecoinConfig {

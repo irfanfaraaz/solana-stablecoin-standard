@@ -24,6 +24,7 @@ pub mod stablecoin {
         enable_transfer_hook: bool,
         default_account_frozen: bool,
         enable_confidential_transfers: bool,
+        enable_allowlist: bool,
         transfer_hook_program_id: Option<Pubkey>,
     ) -> Result<()> {
         handle_initialize(
@@ -36,6 +37,7 @@ pub mod stablecoin {
             enable_transfer_hook,
             default_account_frozen,
             enable_confidential_transfers,
+            enable_allowlist,
             transfer_hook_program_id,
         )
     }
@@ -96,5 +98,13 @@ pub mod stablecoin {
 
     pub fn seize(ctx: Context<Seize>, amount: u64) -> Result<()> {
         handle_seize(ctx, amount)
+    }
+
+    pub fn add_to_allowlist(ctx: Context<ManageAllowlist>) -> Result<()> {
+        handle_add_to_allowlist(ctx)
+    }
+
+    pub fn remove_from_allowlist(ctx: Context<ManageAllowlist>) -> Result<()> {
+        handle_remove_from_allowlist(ctx)
     }
 }

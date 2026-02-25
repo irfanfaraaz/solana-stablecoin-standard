@@ -114,7 +114,9 @@ solana-stablecoin-standard/
 ├── cli/                     # sss-token admin CLI
 ├── backend/                 # Mint/burn + compliance REST API
 ├── tests/
-│   └── stablecoin.test.ts   # Integration + unit-style tests
+│   ├── context.ts           # Shared test context (provider, programs, keypairs)
+│   ├── stablecoin.test.ts   # Test runner (registers all suites)
+│   └── suites/              # Per-area describe blocks (sss2-vanilla, sss1-integration, sss3-allowlist, unit-*, sdk-unit)
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── SDK.md

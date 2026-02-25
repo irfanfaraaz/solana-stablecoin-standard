@@ -8,19 +8,20 @@ From repo root:
 anchor test
 ```
 
-Starts a local validator, deploys the stablecoin and transfer_hook programs, then runs the TypeScript test suite. Expect ~1 minute; 25 tests (SSS-1 integration, SSS-2 flow, preset config, unit error/success cases, SDK unit tests).
+Starts a local validator, deploys the stablecoin and transfer_hook programs, then runs the TypeScript test suite. Expect ~1–2 minutes; 30 tests (SSS-1/SSS-2/SSS-3 flows, preset config, unit error/success cases, SDK unit tests).
 
 ## Test layout
 
-Tests live in **`tests/stablecoin.test.ts`**:
+Tests are modular: **`tests/stablecoin.test.ts`** is the runner (shared context + airdrop); **`tests/context.ts`** defines the test context; **`tests/suites/*.ts`** each register one describe block.
 
 | Describe block | What it covers |
 |----------------|----------------|
 | **SSS-1: Vanilla Stablecoin Operations** | SSS-2 preset: init, transfer-hook init, mint, transfer with hook, blacklist add, blocked transfer, seize, thaw, pause/unpause |
 | **SSS-1: integration (mint → transfer → freeze → thaw)** | SSS-1 preset: init (no hook), mint, plain SPL transfer, freeze, thaw |
 | **Preset config tests** | SSS-1/SSS-2 config flags (enableTransferHook, enablePermanentDelegate) via getConfig() |
+| **SSS-3: Allowlist (POC)** | Confidential + allowlist preset, hook extra accounts, add/remove allowlist, transfer blocked then allowed |
 | **Unit: instruction error cases** | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive |
-| **Unit: instruction success cases** | update_roles, configure_minter, transfer_authority, remove_from_blacklist |
+| **Unit: instruction success cases** | update_roles, configure_minter, transfer_authority, freeze/thaw, remove_from_blacklist |
 | **SDK unit tests** | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load |
 
 ## Trident fuzz
