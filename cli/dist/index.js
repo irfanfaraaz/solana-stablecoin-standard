@@ -38,6 +38,7 @@ const commander_1 = require("commander");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const web3_js_1 = require("@solana/web3.js");
+const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
 const sss_token_1 = require("@stbr/sss-token");
 const PROGRAM_IDS = {
@@ -96,6 +97,7 @@ function parseTomlConfig(configPath) {
         decimals: out.decimals || 6,
         enablePermanentDelegate: !!out.enable_permanent_delegate,
         enableTransferHook: !!out.enable_transfer_hook,
+        defaultAccountFrozen: !!out.default_account_frozen,
     };
 }
 function output(data, json) {
@@ -128,7 +130,7 @@ program
     let config;
     if (opts.custom) {
         const custom = parseTomlConfig(opts.custom);
-        config = { name: custom.name, symbol: custom.symbol, uri: custom.uri || "", decimals: custom.decimals, enablePermanentDelegate: !!custom.enablePermanentDelegate, enableTransferHook: !!custom.enableTransferHook };
+        config = { name: custom.name, symbol: custom.symbol, uri: custom.uri || "", decimals: custom.decimals, enablePermanentDelegate: !!custom.enablePermanentDelegate, enableTransferHook: !!custom.enableTransferHook, defaultAccountFrozen: !!custom.defaultAccountFrozen };
     }
     else {
         const preset = opts.preset === "sss-1" ? sss_token_1.SSS_1_PRESET : sss_token_1.SSS_2_PRESET;
@@ -295,7 +297,7 @@ program
     const mint = new web3_js_1.PublicKey(parent.opts().mint);
     const sdk = new sss_token_1.SolanaStablecoin(stablecoinProgram, mint, (transferHookProgram || undefined));
     const compliance = new sss_token_1.SSSComplianceModule(sdk);
-    const tx = await compliance.addToBlacklist(keypair.publicKey, new web3_js_1.PublicKey(address));
+    const tx = await compliance.addToBlacklist(keypair.publicKey, new web3_js_1.PublicKey(address), opts.reason);
     const sig = await tx.rpc();
     output({ signature: sig, reason: opts.reason }, program.opts().json);
 }))
@@ -366,17 +368,38 @@ mintersCmd.command("remove <minter_pubkey>").description("Remove / deactivate a 
 });
 program
     .command("holders")
-    .description("List holders (stub: use RPC getTokenAccounts)")
-    .option("-m, --mint <address>", "Mint address")
-    .option("--min-balance <amount>", "Minimum balance", "0")
+    .description("List holders by balance (uses RPC getTokenLargestAccounts)")
+    .requiredOption("-m, --mint <address>", "Mint address")
+    .option("--min-balance <amount>", "Minimum balance (raw units)", "0")
     .action(async (opts) => {
-    output({ message: "Use connection.getTokenLargestAccounts(mint) for holders", mint: opts.mint }, program.opts().json);
+    const connection = getConnection(program.opts().rpcUrl);
+    const mint = new web3_js_1.PublicKey(opts.mint);
+    const minBalance = BigInt(opts.minBalance ?? "0");
+    const largest = await connection.getTokenLargestAccounts(mint);
+    const holders = [];
+    for (const { address, amount } of largest.value) {
+        const amt = BigInt(amount);
+        if (amt < minBalance)
+            continue;
+        try {
+            const acc = await (0, spl_token_1.getAccount)(connection, address, "confirmed", spl_token_1.TOKEN_2022_PROGRAM_ID);
+            holders.push({
+                owner: acc.owner.toBase58(),
+                tokenAccount: address.toBase58(),
+                balance: amount,
+            });
+        }
+        catch {
+            // skip unreadable accounts
+        }
+    }
+    output({ mint: opts.mint, holders, count: holders.length }, program.opts().json);
 });
 program
     .command("audit-log")
-    .description("Audit log (stub: requires indexer)")
+    .description("Audit log (use backend indexer / API; see docs/API.md)")
     .option("--action <type>", "Filter by action type")
     .action(async (opts) => {
-    output({ message: "Audit log requires backend indexer (Phase E)" }, program.opts().json);
+    output({ message: "Audit log requires backend indexer. See docs/API.md and backend README.", actionFilter: opts.action }, program.opts().json);
 });
 program.parse();

@@ -125,7 +125,7 @@ app.post("/blacklist/add", async (req: Request, res: Response) => {
     const keypair = loadKeypair();
     const sdk = getSdk(mint);
     const compliance = new SSSComplianceModule(sdk);
-    const tx = await compliance.addToBlacklist(keypair.publicKey, address);
+    const tx = await compliance.addToBlacklist(keypair.publicKey, address, reason);
     const sig = await tx.rpc();
     logAudit("blacklist_add", { mint: mint.toBase58(), address: addressStr, reason, signature: sig });
     res.json({ signature: sig });

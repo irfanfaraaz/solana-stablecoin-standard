@@ -7,6 +7,7 @@ import {
   Keypair,
   PublicKey,
 } from "@solana/web3.js";
+import { getAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import {
   SolanaStablecoin,
@@ -75,6 +76,7 @@ function parseTomlConfig(configPath: string): Partial<StablecoinConfig> & { name
     decimals: (out.decimals as number) || 6,
     enablePermanentDelegate: !!out.enable_permanent_delegate,
     enableTransferHook: !!out.enable_transfer_hook,
+    defaultAccountFrozen: !!out.default_account_frozen,
   } as any;
 }
 
@@ -108,7 +110,7 @@ program
     let config: StablecoinConfig;
     if (opts.custom) {
       const custom = parseTomlConfig(opts.custom);
-      config = { name: custom.name, symbol: custom.symbol, uri: custom.uri || "", decimals: custom.decimals, enablePermanentDelegate: !!custom.enablePermanentDelegate, enableTransferHook: !!custom.enableTransferHook };
+      config = { name: custom.name, symbol: custom.symbol, uri: custom.uri || "", decimals: custom.decimals, enablePermanentDelegate: !!custom.enablePermanentDelegate, enableTransferHook: !!custom.enableTransferHook, defaultAccountFrozen: !!custom.defaultAccountFrozen };
     } else {
       const preset = opts.preset === "sss-1" ? SSS_1_PRESET : SSS_2_PRESET;
       config = { name: opts.name, symbol: opts.symbol, uri: opts.uri, decimals: parseInt(opts.decimals, 10), ...preset };
@@ -282,7 +284,7 @@ program
     const mint = new PublicKey(parent.opts().mint);
     const sdk = new SolanaStablecoin(stablecoinProgram as any, mint, (transferHookProgram || undefined) as any);
     const compliance = new SSSComplianceModule(sdk);
-    const tx = await compliance.addToBlacklist(keypair.publicKey, new PublicKey(address));
+    const tx = await compliance.addToBlacklist(keypair.publicKey, new PublicKey(address), opts.reason);
     const sig = await tx.rpc();
     output({ signature: sig, reason: opts.reason }, (program.opts() as any).json);
   }))
@@ -355,19 +357,38 @@ mintersCmd.command("remove <minter_pubkey>").description("Remove / deactivate a 
 
 program
   .command("holders")
-  .description("List holders (stub: use RPC getTokenAccounts)")
-  .option("-m, --mint <address>", "Mint address")
-  .option("--min-balance <amount>", "Minimum balance", "0")
+  .description("List holders by balance (uses RPC getTokenLargestAccounts)")
+  .requiredOption("-m, --mint <address>", "Mint address")
+  .option("--min-balance <amount>", "Minimum balance (raw units)", "0")
   .action(async (opts) => {
-    output({ message: "Use connection.getTokenLargestAccounts(mint) for holders", mint: opts.mint }, (program.opts() as any).json);
+    const connection = getConnection((program.opts() as any).rpcUrl);
+    const mint = new PublicKey(opts.mint);
+    const minBalance = BigInt(opts.minBalance ?? "0");
+    const largest = await connection.getTokenLargestAccounts(mint);
+    const holders: { owner: string; tokenAccount: string; balance: string }[] = [];
+    for (const { address, amount } of largest.value) {
+      const amt = BigInt(amount);
+      if (amt < minBalance) continue;
+      try {
+        const acc = await getAccount(connection, address, "confirmed", TOKEN_2022_PROGRAM_ID);
+        holders.push({
+          owner: acc.owner.toBase58(),
+          tokenAccount: address.toBase58(),
+          balance: amount,
+        });
+      } catch {
+        // skip unreadable accounts
+      }
+    }
+    output({ mint: opts.mint, holders, count: holders.length }, (program.opts() as any).json);
   });
 
 program
   .command("audit-log")
-  .description("Audit log (stub: requires indexer)")
+  .description("Audit log (use backend indexer / API; see docs/API.md)")
   .option("--action <type>", "Filter by action type")
   .action(async (opts) => {
-    output({ message: "Audit log requires backend indexer (Phase E)" }, (program.opts() as any).json);
+    output({ message: "Audit log requires backend indexer. See docs/API.md and backend README.", actionFilter: opts.action }, (program.opts() as any).json);
   });
 
 program.parse();

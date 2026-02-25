@@ -17,7 +17,7 @@ import {
 import type { Stablecoin } from "../../target/types/stablecoin";
 import type { TransferHook } from "../../target/types/transfer_hook";
 
-/** Config for creating a new stablecoin (name, symbol, etc.). Not stored on-chain except via metadata. */
+/** Config for creating a new stablecoin (name, symbol, etc.). Stored on-chain in StablecoinConfig. */
 export interface StablecoinConfig {
   name: string;
   symbol: string;
@@ -25,17 +25,23 @@ export interface StablecoinConfig {
   decimals: number;
   enablePermanentDelegate: boolean;
   enableTransferHook: boolean;
+  /** Policy flag: new accounts start frozen when true. Stored on-chain only. */
+  defaultAccountFrozen?: boolean;
 }
 
-/** On-chain config account (decimals, pause, flags). Name/symbol/uri are not on-chain in current program. */
+/** On-chain config account (decimals, pause, flags, name, symbol, uri). */
 export interface StablecoinConfigAccount {
   bump: number;
   masterAuthority: PublicKey;
   mint: PublicKey;
+  name: string;
+  symbol: string;
+  uri: string;
   decimals: number;
   isPaused: boolean;
   enablePermanentDelegate: boolean;
   enableTransferHook: boolean;
+  defaultAccountFrozen: boolean;
   enableConfidentialTransfers: boolean;
 }
 
@@ -146,6 +152,7 @@ export class SolanaStablecoin {
         config.decimals,
         config.enablePermanentDelegate,
         config.enableTransferHook,
+        config.defaultAccountFrozen ?? false,
         false, // enableConfidentialTransfers
         transferHookProgramId || null,
       )
@@ -370,7 +377,7 @@ export class SolanaStablecoin {
     return BigInt(info.value.amount);
   }
 
-  /** Fetches on-chain config (decimals, pause, flags). Name/symbol/uri are not stored on-chain. */
+  /** Fetches on-chain config (decimals, pause, flags, name, symbol, uri). */
   async getConfig(): Promise<StablecoinConfigAccount> {
     if (!this.mintAddress) throw new Error("Mint not set");
     const configPda = SolanaStablecoin.getConfigPDA(
@@ -382,10 +389,14 @@ export class SolanaStablecoin {
       bump: raw.bump,
       masterAuthority: raw.masterAuthority,
       mint: raw.mint,
+      name: raw.name ?? "",
+      symbol: raw.symbol ?? "",
+      uri: raw.uri ?? "",
       decimals: raw.decimals,
       isPaused: raw.isPaused,
       enablePermanentDelegate: raw.enablePermanentDelegate,
       enableTransferHook: raw.enableTransferHook,
+      defaultAccountFrozen: raw.defaultAccountFrozen ?? false,
       enableConfidentialTransfers: raw.enableConfidentialTransfers,
     };
   }

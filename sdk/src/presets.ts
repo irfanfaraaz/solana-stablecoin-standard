@@ -7,6 +7,7 @@ export const SSS_1_PRESET: Omit<
 > = {
   enablePermanentDelegate: false,
   enableTransferHook: false,
+  defaultAccountFrozen: false,
 };
 
 // SSS-2 (Standard Stablecoin Spec 2): Fully compliant with seize, freeze, and blacklists
@@ -16,4 +17,5 @@ export const SSS_2_PRESET: Omit<
 > = {
   enablePermanentDelegate: true,
   enableTransferHook: true,
+  defaultAccountFrozen: false,
 };

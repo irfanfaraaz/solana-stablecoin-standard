@@ -69,7 +69,7 @@ class SolanaStablecoin {
         const configPda = SolanaStablecoin.getConfigPDA(mint, this.program.programId);
         const roleAccount = SolanaStablecoin.getRoleAccountPDA(mint, this.program.programId);
         const builder = this.program.methods
-            .initialize(config.name, config.symbol, config.uri, config.decimals, config.enablePermanentDelegate, config.enableTransferHook, false, // enableConfidentialTransfers
+            .initialize(config.name, config.symbol, config.uri, config.decimals, config.enablePermanentDelegate, config.enableTransferHook, config.defaultAccountFrozen ?? false, false, // enableConfidentialTransfers
         transferHookProgramId || null)
             .accounts({
             admin: authority,
@@ -204,7 +204,7 @@ class SolanaStablecoin {
         const info = await this.program.provider.connection.getTokenSupply(this.mintAddress);
         return BigInt(info.value.amount);
     }
-    /** Fetches on-chain config (decimals, pause, flags). Name/symbol/uri are not stored on-chain. */
+    /** Fetches on-chain config (decimals, pause, flags, name, symbol, uri). */
     async getConfig() {
         if (!this.mintAddress)
             throw new Error("Mint not set");
@@ -214,10 +214,14 @@ class SolanaStablecoin {
             bump: raw.bump,
             masterAuthority: raw.masterAuthority,
             mint: raw.mint,
+            name: raw.name ?? "",
+            symbol: raw.symbol ?? "",
+            uri: raw.uri ?? "",
             decimals: raw.decimals,
             isPaused: raw.isPaused,
             enablePermanentDelegate: raw.enablePermanentDelegate,
             enableTransferHook: raw.enableTransferHook,
+            defaultAccountFrozen: raw.defaultAccountFrozen ?? false,
             enableConfidentialTransfers: raw.enableConfidentialTransfers,
         };
     }

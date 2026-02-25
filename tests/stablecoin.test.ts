@@ -618,6 +618,10 @@ describe("solana-stablecoin-standard", () => {
       expect(config.enablePermanentDelegate).to.be.true;
       expect(config.decimals).to.equal(6);
       expect(config.isPaused).to.be.false;
+      expect(config.name).to.equal("Superteam USD");
+      expect(config.symbol).to.equal("SUSD");
+      expect(config.uri).to.equal("https://superteam.fun");
+      expect(config.defaultAccountFrozen).to.be.false;
     });
 
     it("SSS-1 mint has enableTransferHook and enablePermanentDelegate false", async () => {
@@ -630,6 +634,10 @@ describe("solana-stablecoin-standard", () => {
       expect(config.enableTransferHook).to.be.false;
       expect(config.enablePermanentDelegate).to.be.false;
       expect(config.decimals).to.equal(6);
+      expect(config.name).to.equal("SSS1 Minimal");
+      expect(config.symbol).to.equal("SSS1");
+      expect(config.uri).to.equal("https://example.com/sss1");
+      expect(config.defaultAccountFrozen).to.be.false;
     });
   });
 
@@ -938,6 +946,10 @@ describe("solana-stablecoin-standard", () => {
       expect(config).to.have.property("masterAuthority");
       expect(config).to.have.property("mint");
       expect(config.mint.toBase58()).to.equal(mintPda.toBase58());
+      expect(config).to.have.property("name");
+      expect(config).to.have.property("symbol", "SUSD");
+      expect(config).to.have.property("uri");
+      expect(config).to.have.property("defaultAccountFrozen");
       expect(config).to.have.property("enableTransferHook", true);
       expect(config).to.have.property("enablePermanentDelegate", true);
       expect(config).to.have.property("bump");

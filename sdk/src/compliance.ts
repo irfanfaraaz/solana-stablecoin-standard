@@ -13,7 +13,14 @@ export class SSSComplianceModule {
     this.sdk = sdk;
   }
 
-  async addToBlacklist(authority: PublicKey, accountToBlacklist: PublicKey) {
+  /**
+   * Add an account to the blacklist. Optionally pass a reason for audit/logging (not stored on-chain).
+   */
+  async addToBlacklist(
+    authority: PublicKey,
+    accountToBlacklist: PublicKey,
+    reason?: string,
+  ) {
     if (!this.sdk.mintAddress) throw new Error("Mint not set");
     const mint = this.sdk.mintAddress;
     const config = SolanaStablecoin.getConfigPDA(

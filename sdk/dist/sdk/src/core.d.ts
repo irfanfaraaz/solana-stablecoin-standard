@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor";
 import type { Stablecoin } from "../../target/types/stablecoin";
 import type { TransferHook } from "../../target/types/transfer_hook";
-/** Config for creating a new stablecoin (name, symbol, etc.). Not stored on-chain except via metadata. */
+/** Config for creating a new stablecoin (name, symbol, etc.). Stored on-chain in StablecoinConfig. */
 export interface StablecoinConfig {
     name: string;
     symbol: string;
@@ -10,16 +10,22 @@ export interface StablecoinConfig {
     decimals: number;
     enablePermanentDelegate: boolean;
     enableTransferHook: boolean;
+    /** Policy flag: new accounts start frozen when true. Stored on-chain only. */
+    defaultAccountFrozen?: boolean;
 }
-/** On-chain config account (decimals, pause, flags). Name/symbol/uri are not on-chain in current program. */
+/** On-chain config account (decimals, pause, flags, name, symbol, uri). */
 export interface StablecoinConfigAccount {
     bump: number;
     masterAuthority: PublicKey;
     mint: PublicKey;
+    name: string;
+    symbol: string;
+    uri: string;
     decimals: number;
     isPaused: boolean;
     enablePermanentDelegate: boolean;
     enableTransferHook: boolean;
+    defaultAccountFrozen: boolean;
     enableConfidentialTransfers: boolean;
 }
 /** On-chain role account (burner, pauser, blacklister, seizer). */
@@ -108,6 +114,9 @@ export declare class SolanaStablecoin {
             "type": "bool";
         }, {
             "name": "enableTransferHook";
+            "type": "bool";
+        }, {
+            "name": "defaultAccountFrozen";
             "type": "bool";
         }, {
             "name": "enableConfidentialTransfers";
@@ -796,7 +805,7 @@ export declare class SolanaStablecoin {
     }>>;
     /** Returns total supply of the stablecoin mint. Requires mintAddress to be set. */
     getTotalSupply(): Promise<bigint>;
-    /** Fetches on-chain config (decimals, pause, flags). Name/symbol/uri are not stored on-chain. */
+    /** Fetches on-chain config (decimals, pause, flags, name, symbol, uri). */
     getConfig(): Promise<StablecoinConfigAccount>;
     /** Fetches on-chain role account (burner, pauser, blacklister, seizer). */
     getRoles(): Promise<RoleAccountData>;

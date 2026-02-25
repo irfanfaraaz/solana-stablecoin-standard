@@ -25,7 +25,7 @@ yarn cli init --preset sss-2 -n "Compliant" -s CCOIN -u "https://example.com/cco
 yarn cli init --custom path/to/config.toml
 ```
 
-TOML keys: `name`, `symbol`, `uri`, `decimals`, `enable_permanent_delegate`, `enable_transfer_hook`.
+TOML keys: `name`, `symbol`, `uri`, `decimals`, `enable_permanent_delegate`, `enable_transfer_hook`, `default_account_frozen`.
 
 Output: `mint`, `configPda`, `signature`; for SSS-2 also `transferHookInitSignature`.
 

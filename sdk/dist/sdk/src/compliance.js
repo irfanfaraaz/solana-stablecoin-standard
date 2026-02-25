@@ -9,7 +9,10 @@ class SSSComplianceModule {
     constructor(sdk) {
         this.sdk = sdk;
     }
-    async addToBlacklist(authority, accountToBlacklist) {
+    /**
+     * Add an account to the blacklist. Optionally pass a reason for audit/logging (not stored on-chain).
+     */
+    async addToBlacklist(authority, accountToBlacklist, reason) {
         if (!this.sdk.mintAddress)
             throw new Error("Mint not set");
         const mint = this.sdk.mintAddress;

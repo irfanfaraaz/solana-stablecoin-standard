@@ -5,9 +5,11 @@ exports.SSS_2_PRESET = exports.SSS_1_PRESET = void 0;
 exports.SSS_1_PRESET = {
     enablePermanentDelegate: false,
     enableTransferHook: false,
+    defaultAccountFrozen: false,
 };
 // SSS-2 (Standard Stablecoin Spec 2): Fully compliant with seize, freeze, and blacklists
 exports.SSS_2_PRESET = {
     enablePermanentDelegate: true,
     enableTransferHook: true,
+    defaultAccountFrozen: false,
 };

@@ -22,6 +22,7 @@ pub mod stablecoin {
         decimals: u8,
         enable_permanent_delegate: bool,
         enable_transfer_hook: bool,
+        default_account_frozen: bool,
         enable_confidential_transfers: bool,
         transfer_hook_program_id: Option<Pubkey>,
     ) -> Result<()> {
@@ -33,6 +34,7 @@ pub mod stablecoin {
             decimals,
             enable_permanent_delegate,
             enable_transfer_hook,
+            default_account_frozen,
             enable_confidential_transfers,
             transfer_hook_program_id,
         )

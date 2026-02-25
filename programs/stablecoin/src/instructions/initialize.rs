@@ -14,6 +14,18 @@ use anchor_spl::{
 
 use crate::{errors::*, state::*};
 
+/// Truncate string to at most `max_bytes` bytes on UTF-8 boundary.
+fn truncate_to_bytes(s: &str, max_bytes: usize) -> String {
+    if s.len() <= max_bytes {
+        return s.to_string();
+    }
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    s[..end].to_string()
+}
+
 #[derive(Accounts)]
 #[instruction(_name: String, _symbol: String)]
 pub struct Initialize<'info> {
@@ -52,12 +64,13 @@ pub struct Initialize<'info> {
 
 pub fn handle_initialize(
     ctx: Context<Initialize>,
-    _name: String,
-    _symbol: String,
-    _uri: String,
+    name: String,
+    symbol: String,
+    uri: String,
     decimals: u8,
     enable_permanent_delegate: bool,
     enable_transfer_hook: bool,
+    default_account_frozen: bool,
     enable_confidential_transfers: bool,
     transfer_hook_program_id: Option<Pubkey>,
 ) -> Result<()> {
@@ -69,12 +82,13 @@ pub fn handle_initialize(
         extension_types.push(ExtensionType::TransferHook);
     }
 
-    let mint_size = ExtensionType::try_calculate_account_len::<SplMint>(&extension_types).unwrap();
+    let mint_size = ExtensionType::try_calculate_account_len::<SplMint>(&extension_types)
+        .map_err(|_| StablecoinError::MathOverflow)?;
     let rent = Rent::get()?;
     let lamports = rent.minimum_balance(mint_size);
 
     let mint_bump = ctx.bumps.mint;
-    let symbol_bytes = _symbol.as_bytes();
+    let symbol_bytes = symbol.as_bytes();
     let signer_seeds: &[&[&[u8]]] = &[&[b"mint", symbol_bytes, &[mint_bump]]];
 
     if ctx.accounts.mint.data_is_empty() {
@@ -142,10 +156,14 @@ pub fn handle_initialize(
     config.bump = ctx.bumps.config;
     config.master_authority = ctx.accounts.admin.key();
     config.mint = ctx.accounts.mint.key();
+    config.name = truncate_to_bytes(&name, 64);
+    config.symbol = truncate_to_bytes(&symbol, 16);
+    config.uri = truncate_to_bytes(&uri, 256);
     config.decimals = decimals;
     config.is_paused = false;
     config.enable_permanent_delegate = enable_permanent_delegate;
     config.enable_transfer_hook = enable_transfer_hook;
+    config.default_account_frozen = default_account_frozen;
     config.enable_confidential_transfers = enable_confidential_transfers;
 
     let roles = &mut ctx.accounts.role_account;

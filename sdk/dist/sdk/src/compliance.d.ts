@@ -3,7 +3,10 @@ import { SolanaStablecoin } from "./core";
 export declare class SSSComplianceModule {
     private sdk;
     constructor(sdk: SolanaStablecoin);
-    addToBlacklist(authority: PublicKey, accountToBlacklist: PublicKey): Promise<import("@coral-xyz/anchor/dist/cjs/program/namespace/methods").MethodsBuilder<import("../../target/types/stablecoin").Stablecoin, {
+    /**
+     * Add an account to the blacklist. Optionally pass a reason for audit/logging (not stored on-chain).
+     */
+    addToBlacklist(authority: PublicKey, accountToBlacklist: PublicKey, reason?: string): Promise<import("@coral-xyz/anchor/dist/cjs/program/namespace/methods").MethodsBuilder<import("../../target/types/stablecoin").Stablecoin, {
         name: "addToBlacklist";
         discriminator: [90, 115, 98, 231, 173, 119, 117, 176];
         accounts: [{

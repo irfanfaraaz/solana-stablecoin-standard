@@ -47,12 +47,18 @@ pub fn handle_mint(ctx: Context<MintTokens>, amount: u64) -> Result<()> {
         config.last_mint_timestamp = current_time;
     }
 
-    if config.daily_minted.checked_add(amount).unwrap() > config.daily_mint_quota {
+    let new_daily = config
+        .daily_minted
+        .checked_add(amount)
+        .ok_or(StablecoinError::MathOverflow)?;
+    if new_daily > config.daily_mint_quota {
         return err!(StablecoinError::QuotaExceeded);
     }
-
-    config.daily_minted = config.daily_minted.checked_add(amount).unwrap();
-    config.total_minted = config.total_minted.checked_add(amount).unwrap();
+    config.daily_minted = new_daily;
+    config.total_minted = config
+        .total_minted
+        .checked_add(amount)
+        .ok_or(StablecoinError::MathOverflow)?;
 
     let mint_key = ctx.accounts.mint.key().clone();
     let mint_key = mint_key.as_ref();

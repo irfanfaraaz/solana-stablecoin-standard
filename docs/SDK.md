@@ -74,7 +74,7 @@ Assume `sdk` is a `SolanaStablecoin` with `mintAddress` set.
 ## View methods
 
 - `sdk.getTotalSupply()` → `BN` (total supply).
-- `sdk.getConfig()` → `StablecoinConfigAccount` (decimals, isPaused, flags, masterAuthority, mint, etc.).
+- `sdk.getConfig()` → `StablecoinConfigAccount` (decimals, isPaused, flags, masterAuthority, mint, **name**, **symbol**, **uri**, **defaultAccountFrozen**, etc.).
 - `sdk.getRoles()` → `RoleAccountData` (burner, pauser, blacklister, seizer).
 
 ## Compliance (SSS-2)
@@ -84,7 +84,7 @@ const compliance = new SSSComplianceModule(sdk);
 // After init, run once to set extra-account-metas for the mint:
 await compliance.initializeTransferHookExtraAccounts(authority).then(tx => tx.rpc());
 // Then:
-compliance.addToBlacklist(blacklister, address);
+compliance.addToBlacklist(blacklister, address);           // optional 3rd arg: reason (audit only, not on-chain)
 compliance.removeFromBlacklist(blacklister, address);
 compliance.seize(seizer, fromAccount, treasury, amount);
 ```

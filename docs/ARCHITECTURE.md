@@ -52,6 +52,17 @@
 | Minter   | stablecoin     | `["minter", mint, minter_pubkey]` |
 | BlacklistEntry (hook) | transfer_hook | Defined in hook; resolved via extra-account-metas |
 
+## Config account (on-chain)
+
+`StablecoinConfig` is stored at the config PDA and includes:
+
+- **Identity:** `name`, `symbol`, `uri` (strings, max lengths 64 / 16 / 256 bytes). Set at initialize; useful for indexers and UIs.
+- **Authority and mint:** `master_authority`, `mint`, `bump`, `decimals`.
+- **Flags:** `is_paused`, `enable_permanent_delegate`, `enable_transfer_hook`, `enable_confidential_transfers`.
+- **default_account_frozen:** Boolean policy flag stored on-chain. When true, it indicates the issuer’s policy that new token accounts may start frozen; it is not wired to Token-2022 default account state in this implementation. Used for documentation and future extension.
+
+Existing configs deployed before this layout may have empty name/symbol/uri when read.
+
 ## Security model
 
 - **Roles:** Single PDA holds burner, pauser, blacklister, seizer. Update via `update_roles` (master authority).
