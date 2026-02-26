@@ -1,74 +1,167 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { WalletButton } from "./components/WalletButton";
+import { useState, useMemo } from "react";
+import { AppShell, type TabId } from "./components/AppShell";
 import { CreateStablecoinForm } from "./components/CreateStablecoinForm";
 import { MintStatus } from "./components/MintStatus";
 import { BalanceCard } from "./components/BalanceCard";
 import { TransferForm } from "./components/TransferForm";
+import { ScreeningCheck } from "./components/ScreeningCheck";
+import { BlacklistSection } from "./components/BlacklistSection";
+import { AllowlistSection } from "./components/AllowlistSection";
+import { SeizeSection } from "./components/SeizeSection";
+import { AdminMintBurn } from "./components/AdminMintBurn";
+import { ConfigureMinter } from "./components/ConfigureMinter";
+import { AdminFreezePause } from "./components/AdminFreezePause";
+import { AuditSection } from "./components/AuditSection";
+import { EventsSection } from "./components/EventsSection";
+import { Toast } from "./components/Toast";
+import { WalletButton } from "./components/WalletButton";
+import { AuthorityBanner } from "./components/AuthorityBanner";
+import { useMint } from "./context/mint-context";
 
-const DEFAULT_MINT = process.env.NEXT_PUBLIC_MINT_ADDRESS ?? null;
-const MINT_DEBOUNCE_MS = 600;
+const CONTENT_CLASS = "mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10";
 
 export default function Home() {
-  const [mintInput, setMintInput] = useState(DEFAULT_MINT ?? "");
-  const [debouncedMint, setDebouncedMint] = useState<string | null>(
-    () => DEFAULT_MINT || null
-  );
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const { mintAddress } = useMint();
 
-  const trimmed = mintInput.trim();
-  useEffect(() => {
-    if (!trimmed) {
-      queueMicrotask(() => setDebouncedMint(DEFAULT_MINT || null));
-      return;
-    }
-    const id = setTimeout(() => setDebouncedMint(trimmed), MINT_DEBOUNCE_MS);
-    return () => clearTimeout(id);
-  }, [trimmed]);
-
-  const mintAddress = useMemo(
-    () => debouncedMint || DEFAULT_MINT || null,
-    [debouncedMint]
-  );
+  const mintDisplay = useMemo(() => {
+    const m = mintAddress?.trim();
+    return m && m.length >= 32 ? m : null;
+  }, [mintAddress]);
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-bg1 text-foreground">
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-4xl flex-col gap-10 border-x border-border-low px-6 py-16">
-        <header className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.18em] text-muted">
-            Solana Stablecoin Standard
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Example frontend
-          </h1>
-          <p className="max-w-3xl text-base leading-relaxed text-muted">
-            Simple UI using the <code className="font-mono">@stbr/sss-token</code> SDK for
-            stablecoin creation and management. Connect a wallet, set the mint address, and
-            view status, balance, and transfer.
-          </p>
-        </header>
+      <Toast />
+      <AppShell
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        mintDisplay={mintDisplay}
+      >
+        <div className={CONTENT_CLASS}>
+          {activeTab === "overview" && (
+            <OverviewPanel mintAddress={mintAddress} />
+          )}
+          {activeTab === "create" && (
+            <CreatePanel />
+          )}
+          {activeTab === "compliance" && (
+            <CompliancePanel />
+          )}
+          {activeTab === "admin" && (
+            <AdminPanel />
+          )}
+          {activeTab === "audit" && (
+            <AuditPanel />
+          )}
+        </div>
+      </AppShell>
+    </div>
+  );
+}
 
-        <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6">
-          <p className="text-lg font-semibold">Mint address</p>
-          <p className="text-sm text-muted">
-            Paste the stablecoin mint address (or set{" "}
-            <code className="font-mono">NEXT_PUBLIC_MINT_ADDRESS</code>).
-          </p>
-          <input
-            type="text"
-            value={mintInput}
-            onChange={(e) => setMintInput(e.target.value)}
-            placeholder="e.g. 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
-            className="w-full rounded-lg border border-border-low bg-card px-3 py-2 font-mono text-sm"
-          />
-        </section>
-
+function OverviewPanel({ mintAddress }: { mintAddress: string | null }) {
+  return (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Wallet &amp; mint
+        </h2>
         <WalletButton />
-        <CreateStablecoinForm />
-        <MintStatus mintAddress={mintAddress} />
-        <BalanceCard mintAddress={mintAddress} />
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Status &amp; balance
+        </h2>
+        <div className="space-y-4">
+          <MintStatus mintAddress={mintAddress} />
+          <BalanceCard mintAddress={mintAddress} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Transfer
+        </h2>
         <TransferForm mintAddress={mintAddress} />
-      </main>
+      </section>
+    </div>
+  );
+}
+
+function CreatePanel() {
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted">
+        Create a new stablecoin for this program. You will be the master authority.
+      </p>
+      <CreateStablecoinForm />
+    </div>
+  );
+}
+
+function CompliancePanel() {
+  return (
+    <div className="space-y-8">
+      <AuthorityBanner context="compliance" />
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Screening
+        </h2>
+        <ScreeningCheck />
+      </section>
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Allowlist &amp; blacklist
+        </h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <BlacklistSection />
+          <AllowlistSection />
+        </div>
+      </section>
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Seize
+        </h2>
+        <SeizeSection />
+      </section>
+    </div>
+  );
+}
+
+function AdminPanel() {
+  return (
+    <div className="space-y-8">
+      <AuthorityBanner context="admin" />
+      <p className="text-sm text-muted">
+        Configure minters, mint/burn, and pause or freeze the stablecoin. Requires the appropriate authority.
+      </p>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <ConfigureMinter />
+        <AdminMintBurn />
+        <AdminFreezePause />
+      </div>
+    </div>
+  );
+}
+
+function AuditPanel() {
+  return (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Audit
+        </h2>
+        <AuditSection />
+      </section>
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-4">
+          Events
+        </h2>
+        <EventsSection />
+      </section>
     </div>
   );
 }

@@ -5,10 +5,15 @@ Simple UI using the **@stbr/sss-token** SDK for stablecoin creation and manageme
 ## Features
 
 - **Wallet**: Connect via Wallet Standard (Phantom, etc.) using `@solana/react-hooks`.
-- **Mint address**: Paste a stablecoin mint (or set `NEXT_PUBLIC_MINT_ADDRESS`).
-- **Mint status**: Fetches config (name, symbol, decimals, paused) and total supply via the SDK.
-- **Balance**: Shows your token balance for the given mint (Token-2022 ATA).
-- **Transfer**: Send tokens to another address using `useSplToken` with Token-2022.
+- **Mint address**: Single input at top (context); paste a stablecoin mint or set `NEXT_PUBLIC_MINT_ADDRESS`.
+- **Create stablecoin**: SSS-1, SSS-2, or SSS-3 (confidential + allowlist) via SDK.
+- **Mint status**: Config (name, symbol, decimals, paused, confidential, allowlist) and total supply.
+- **Balance**: Your token balance for the given mint (Token-2022 ATA).
+- **Transfer**: Send tokens; optional screening hint when `NEXT_PUBLIC_BACKEND_URL` is set.
+- **Screening**: Check if an address is allowed for the mint (backend `/screen`); only when backend URL is set.
+- **Compliance**: Blacklist (add/remove), Allowlist (SSS-3, add/remove), Seize — via SDK (wallet signs).
+- **Admin**: Mint/Burn via backend (when URL set); Freeze/Thaw and Pause/Unpause via SDK.
+- **Audit & events**: View audit log and export CSV/JSON; list indexed events (when backend URL set).
 
 ## Prerequisites
 
@@ -26,6 +31,8 @@ Simple UI using the **@stbr/sss-token** SDK for stablecoin creation and manageme
 
    - `NEXT_PUBLIC_RPC_URL` – RPC endpoint (default: devnet).
    - `NEXT_PUBLIC_MINT_ADDRESS` – pre-filled mint address.
+   - `NEXT_PUBLIC_BACKEND_URL` – backend API base URL; when set, enables Screening, Admin (mint/burn), Audit, and Events.
+   - `NEXT_PUBLIC_API_KEY` – optional; sent as `Authorization: Bearer <key>` when calling the backend.
 
 ## Commands
 

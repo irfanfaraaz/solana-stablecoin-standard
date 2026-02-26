@@ -3,8 +3,9 @@
 import { PublicKey } from "@solana/web3.js";
 import type { TransactionInstruction } from "@solana/web3.js";
 import { createSdkContext } from "./sdk-browser";
+import { builderToInstruction } from "./instruction-to-kit";
 
-export type PresetKind = "sss-1" | "sss-2";
+export type PresetKind = "sss-1" | "sss-2" | "sss-3";
 
 export interface CreateStablecoinParams {
   preset: PresetKind;
@@ -22,7 +23,7 @@ export async function buildCreateStablecoinInstructions(
   authorityPublicKey: PublicKey,
   params: CreateStablecoinParams
 ): Promise<TransactionInstruction[]> {
-  const { SolanaStablecoin, SSS_1_PRESET, SSS_2_PRESET } = await import(
+  const { SolanaStablecoin, SSS_1_PRESET, SSS_2_PRESET, SSS_3_PRESET } = await import(
     "@stbr/sss-token"
   );
   const { stablecoinProgram, transferHookProgram } = await createSdkContext(
@@ -30,9 +31,11 @@ export async function buildCreateStablecoinInstructions(
   );
 
   const preset =
-    params.preset === "sss-2"
-      ? { ...SSS_2_PRESET }
-      : { ...SSS_1_PRESET };
+    params.preset === "sss-3"
+      ? { ...SSS_3_PRESET }
+      : params.preset === "sss-2"
+        ? { ...SSS_2_PRESET }
+        : { ...SSS_1_PRESET };
   const config = {
     name: params.name,
     symbol: params.symbol,
@@ -51,7 +54,7 @@ export async function buildCreateStablecoinInstructions(
     config as any,
     transferHookProgram?.programId ?? undefined
   );
-  const initIx = await initBuilder.instruction();
+  const initIx = await builderToInstruction(initBuilder);
   const instructions: TransactionInstruction[] = [initIx];
 
   if (
@@ -65,7 +68,7 @@ export async function buildCreateStablecoinInstructions(
       authorityPublicKey,
       (config as any).enableAllowlist ?? false
     );
-    const hookIx = await hookBuilder.instruction();
+    const hookIx = await builderToInstruction(hookBuilder);
     instructions.push(hookIx);
   }
 

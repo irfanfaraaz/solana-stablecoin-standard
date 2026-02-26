@@ -3,12 +3,13 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { PublicKey } from "@solana/web3.js";
 import type { SolanaStablecoin } from "@stbr/sss-token";
-import type { StablecoinConfigAccount } from "@stbr/sss-token";
+import type { StablecoinConfigAccount, RoleAccountData } from "@stbr/sss-token";
 import { createSdkContext } from "./sdk-browser";
 
 type UseStablecoinSdkResult = {
   sdk: SolanaStablecoin | null;
   config: StablecoinConfigAccount | null;
+  roles: RoleAccountData | null;
   totalSupply: bigint | null;
   loading: boolean;
   error: Error | null;
@@ -25,6 +26,7 @@ export function useStablecoinSdk(
 ): UseStablecoinSdkResult {
   const [sdk, setSdk] = useState<SolanaStablecoin | null>(null);
   const [config, setConfig] = useState<StablecoinConfigAccount | null>(null);
+  const [roles, setRoles] = useState<RoleAccountData | null>(null);
   const [totalSupply, setTotalSupply] = useState<bigint | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -44,6 +46,7 @@ export function useStablecoinSdk(
     if (!walletKeyStr || !mintPubkey) {
       setSdk(null);
       setConfig(null);
+      setRoles(null);
       setTotalSupply(null);
       setError(null);
       return;
@@ -62,16 +65,19 @@ export function useStablecoinSdk(
         (transferHookProgram ?? undefined) as any
       );
       setSdk(instance);
-      const [cfg, supply] = await Promise.all([
+      const [cfg, rolesData, supply] = await Promise.all([
         instance.getConfig(),
+        instance.getRoles().catch(() => null),
         instance.getTotalSupply(),
       ]);
       setConfig(cfg);
+      setRoles(rolesData);
       setTotalSupply(supply);
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
       setSdk(null);
       setConfig(null);
+      setRoles(null);
       setTotalSupply(null);
     } finally {
       setLoading(false);
@@ -82,5 +88,5 @@ export function useStablecoinSdk(
     load();
   }, [load]);
 
-  return { sdk, config, totalSupply, loading, error, refresh: load };
+  return { sdk, config, roles, totalSupply, loading, error, refresh: load };
 }

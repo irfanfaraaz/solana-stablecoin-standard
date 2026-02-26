@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWalletSession, useSendTransaction } from "@solana/react-hooks";
 import { toAddress } from "@solana/client";
 import { PublicKey } from "@solana/web3.js";
@@ -10,10 +10,17 @@ import {
   type CreateStablecoinParams,
 } from "../lib/build-create-instructions";
 import { web3InstructionToKitFormat } from "../lib/instruction-to-kit";
+import { getTransactionErrorMessage } from "../lib/transaction-error";
+import { useSettings } from "../context/settings-context";
 
 export function CreateStablecoinForm() {
   const session = useWalletSession();
+  const { showToast } = useSettings();
   const { send, isSending, signature, status, error, reset } = useSendTransaction();
+
+  useEffect(() => {
+    if (signature && status === "success") showToast(signature);
+  }, [signature, status, showToast]);
 
   const [preset, setPreset] = useState<PresetKind>("sss-1");
   const [name, setName] = useState("");
@@ -60,7 +67,7 @@ export function CreateStablecoinForm() {
       });
       setTxError(null);
     } catch (err) {
-      setTxError(err instanceof Error ? err.message : String(err));
+      setTxError(getTransactionErrorMessage(err));
     }
   };
 
@@ -90,6 +97,7 @@ export function CreateStablecoinForm() {
           >
             <option value="sss-1">SSS-1 (minimal)</option>
             <option value="sss-2">SSS-2 (compliant: blacklist, seize)</option>
+            <option value="sss-3">SSS-3 (confidential + allowlist)</option>
           </select>
         </div>
         <div>
@@ -139,7 +147,7 @@ export function CreateStablecoinForm() {
         </div>
         {(txError != null || error != null) ? (
           <p className="text-sm text-red-600">
-            {txError ?? (error instanceof Error ? error.message : String(error))}
+            {txError ?? (error != null ? getTransactionErrorMessage(error) : "")}
           </p>
         ) : null}
         {status === "success" && signature && (
@@ -148,7 +156,7 @@ export function CreateStablecoinForm() {
         <button
           type="submit"
           disabled={isSending || !name.trim() || !symbol.trim()}
-          className="rounded-lg border border-border-low bg-cream px-4 py-2 font-medium transition hover:-translate-y-0.5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg border border-border-low bg-cream px-4 py-2 font-medium transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSending ? "Creating…" : "Create stablecoin"}
         </button>

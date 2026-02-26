@@ -6,7 +6,7 @@
 |-------|-------------|-----------|
 | **L1 Base** | Core stablecoin program + Token-2022 | `programs/stablecoin`, config/roles/minter PDAs |
 | **L2 Modules** | Optional extensions | Transfer hook program, blacklist PDAs, seize CPI |
-| **L3 Presets** | Predefined configs | SSS-1 (no hook), SSS-2 (hook + permanent delegate) |
+| **L3 Presets** | Predefined configs | SSS-1 (no hook), SSS-2 (hook + blacklist), SSS-3 (hook + allowlist + confidential) |
 
 ## Data flows
 
@@ -31,11 +31,11 @@
 
 - **Pause / Unpause:** Require pauser role. Set `config.is_paused`; instructions check this and fail when paused.
 
-### Transfer (SSS-2)
+### Transfer (SSS-2 / SSS-3)
 
 1. User sends Token-2022 transfer (with hook).
-2. Transfer hook program runs; reads extra-account-metas (blacklist PDAs).
-3. Hook checks sender and receiver against blacklist; if either is blacklisted, transfer fails.
+2. Transfer hook program runs; reads extra-account-metas (blacklist PDAs; for SSS-3 also allowlist PDAs).
+3. Hook checks sender and receiver against blacklist; if either is blacklisted, transfer fails. When allowlist is enabled (SSS-3), source and destination must be on the allowlist.
 
 ### Blacklist / Seize (SSS-2)
 
@@ -51,6 +51,7 @@
 | Roles    | stablecoin     | `["roles", mint]` |
 | Minter   | stablecoin     | `["minter", mint, minter_pubkey]` |
 | BlacklistEntry (hook) | transfer_hook | Defined in hook; resolved via extra-account-metas |
+| AllowlistEntry        | stablecoin    | `["allowlist", mint, wallet]` (SSS-3) |
 
 ## Config account (on-chain)
 
@@ -58,7 +59,7 @@
 
 - **Identity:** `name`, `symbol`, `uri` (strings, max lengths 64 / 16 / 256 bytes). Set at initialize; useful for indexers and UIs.
 - **Authority and mint:** `master_authority`, `mint`, `bump`, `decimals`.
-- **Flags:** `is_paused`, `enable_permanent_delegate`, `enable_transfer_hook`, `enable_confidential_transfers`.
+- **Flags:** `is_paused`, `enable_permanent_delegate`, `enable_transfer_hook`, `enable_confidential_transfers`, `enable_allowlist`.
 - **default_account_frozen:** Boolean policy flag stored on-chain. When true, it indicates the issuer’s policy that new token accounts may start frozen; it is not wired to Token-2022 default account state in this implementation. Used for documentation and future extension.
 
 Existing configs deployed before this layout may have empty name/symbol/uri when read.

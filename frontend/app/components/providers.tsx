@@ -4,6 +4,8 @@ import { SolanaProvider } from "@solana/react-hooks";
 import type { ReactNode } from "react";
 
 import { autoDiscover, createClient } from "@solana/client";
+import { MintProvider } from "../context/mint-context";
+import { SettingsProvider } from "../context/settings-context";
 
 const rpcUrl =
   typeof window !== "undefined"
@@ -16,5 +18,11 @@ const client = createClient({
 });
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <SolanaProvider client={client}>{children as any}</SolanaProvider>;
+  return (
+    <SolanaProvider client={client}>
+      <MintProvider>
+        <SettingsProvider>{children as any}</SettingsProvider>
+      </MintProvider>
+    </SolanaProvider>
+  );
 }

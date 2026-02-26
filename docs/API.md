@@ -9,41 +9,41 @@ This document describes the **backend API** expected for Phase E (mint/burn serv
 
 ## Health
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Liveness/readiness; returns 200 when service and dependencies (RPC, DB) are ok. |
+| Method | Path      | Description                                                                     |
+| ------ | --------- | ------------------------------------------------------------------------------- |
+| GET    | `/health` | Liveness/readiness; returns 200 when service and dependencies (RPC, DB) are ok. |
 
 ## Mint / burn service
 
-| Method | Path | Description | Body |
-|--------|------|-------------|------|
-| POST | `/mint` | Mint tokens to a recipient | `{ "mint": "<mint_pubkey>", "recipient": "<pubkey>", "amount": "<string>" }` |
-| POST | `/burn` | Burn tokens (from configured burner ATA or specified account) | `{ "mint": "<mint_pubkey>", "amount": "<string>", "from?: "<ata_pubkey>" }` |
+| Method | Path    | Description                                                   | Body                                                                         |
+| ------ | ------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| POST   | `/mint` | Mint tokens to a recipient                                    | `{ "mint": "<mint_pubkey>", "recipient": "<pubkey>", "amount": "<string>" }` |
+| POST   | `/burn` | Burn tokens (from configured burner ATA or specified account) | `{ "mint": "<mint_pubkey>", "amount": "<string>", "from?: "<ata_pubkey>" }`  |
 
 Response: `{ "signature": "<tx_sig>" }` or error payload. Service should validate against stablecoin config (e.g. pause, minter/quota) before submitting. Mint and burn run a **verify** step (screening) before execution; if screening fails, the API returns 403.
 
 ## Screening API
 
-| Method | Path | Description | Body / Query |
-|--------|------|-------------|--------------|
-| POST | `/screen` | Check if an address is allowed for a mint (on-chain blacklist) | Body: `{ "address": "<pubkey>", "mint": "<pubkey>" }` |
-| GET | `/screen` | Same as POST, with query params | `?address=<pubkey>&mint=<pubkey>` |
+| Method | Path      | Description                                                    | Body / Query                                          |
+| ------ | --------- | -------------------------------------------------------------- | ----------------------------------------------------- |
+| POST   | `/screen` | Check if an address is allowed for a mint (on-chain blacklist) | Body: `{ "address": "<pubkey>", "mint": "<pubkey>" }` |
+| GET    | `/screen` | Same as POST, with query params                                | `?address=<pubkey>&mint=<pubkey>`                     |
 
 Response: `{ "allowed": boolean, "reason"?: string }`. Used by operators and frontends to check an address before mint/transfer.
 
 ## Compliance (SSS-2)
 
-| Method | Path | Description | Body |
-|--------|------|-------------|------|
-| POST | `/blacklist/add` | Add address to blacklist | `{ "mint": "<mint_pubkey>", "address": "<pubkey>", "reason?: "<string>" }` |
-| POST | `/blacklist/remove` | Remove address from blacklist | `{ "mint": "<mint_pubkey>", "address": "<pubkey>" }` |
-| POST | `/seize` | Seize tokens to treasury | `{ "mint": "<mint_pubkey>", "from": "<ata_pubkey>", "treasury": "<pubkey>", "amount?: "<string>" }` |
+| Method | Path                | Description                   | Body                                                                                                |
+| ------ | ------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| POST   | `/blacklist/add`    | Add address to blacklist      | `{ "mint": "<mint_pubkey>", "address": "<pubkey>", "reason?: "<string>" }`                          |
+| POST   | `/blacklist/remove` | Remove address from blacklist | `{ "mint": "<mint_pubkey>", "address": "<pubkey>" }`                                                |
+| POST   | `/seize`            | Seize tokens to treasury      | `{ "mint": "<mint_pubkey>", "from": "<ata_pubkey>", "treasury": "<pubkey>", "amount?: "<string>" }` |
 
 All should be logged for audit (see COMPLIANCE.md).
 
-| Method | Path | Description | Query |
-|--------|------|-------------|-------|
-| GET | `/audit/export` | Audit trail export (CSV or JSON download) | `format=csv` or `format=json` (default) |
+| Method | Path            | Description                               | Query                                   |
+| ------ | --------------- | ----------------------------------------- | --------------------------------------- |
+| GET    | `/audit/export` | Audit trail export (CSV or JSON download) | `format=csv` or `format=json` (default) |
 
 Response: CSV with headers `time,event,mint,signature,...` or JSON array. `Content-Disposition: attachment`.
 
@@ -53,9 +53,9 @@ Response: CSV with headers `time,event,mint,signature,...` or JSON array. `Conte
 - **Enable:** Set `INDEXER_ENABLED=true`. Optional `INDEXER_POLL_MS` (default 8000).
 - **Endpoint:**
 
-| Method | Path | Description | Query |
-|--------|------|-------------|-------|
-| GET | `/events` | Recent indexed events | `mint` (optional), `limit` (default 50, max 200), `before` (signature cursor) |
+| Method | Path      | Description           | Query                                                                         |
+| ------ | --------- | --------------------- | ----------------------------------------------------------------------------- |
+| GET    | `/events` | Recent indexed events | `mint` (optional), `limit` (default 50, max 200), `before` (signature cursor) |
 
 Response: `{ "events": [ { "signature", "slot", "blockTime?", "mint?", "eventType?" } ] }`.
 

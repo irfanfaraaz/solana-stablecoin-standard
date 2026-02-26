@@ -1,6 +1,6 @@
 # Solana Stablecoin Standard (SSS)
 
-Reference implementation of the Solana Stablecoin Standard: a configurable Token-2022 stablecoin with optional compliance (freeze, blacklist, seize) and two presets — **SSS-1** (minimal) and **SSS-2** (compliant).
+Reference implementation of the Solana Stablecoin Standard: a configurable Token-2022 stablecoin with optional compliance (freeze, blacklist, seize) and three presets — **SSS-1** (minimal), **SSS-2** (compliant), and **SSS-3** (allowlist-gated confidential).
 
 ## Overview
 
@@ -77,16 +77,18 @@ For local tests run `anchor test` (starts a local validator). For devnet deploym
 
 ## Preset comparison
 
-| Feature              | SSS-1 | SSS-2 |
-|----------------------|-------|-------|
-| Token-2022 mint      | ✅    | ✅    |
-| Freeze / thaw        | ✅    | ✅    |
-| Pause / unpause      | ✅    | ✅    |
-| Permanent delegate   | ❌    | ✅    |
-| Transfer hook        | ❌    | ✅    |
-| Blacklist / seize    | ❌    | ✅    |
+| Feature              | SSS-1 | SSS-2 | SSS-3 |
+|----------------------|-------|-------|-------|
+| Token-2022 mint      | ✅    | ✅    | ✅    |
+| Freeze / thaw        | ✅    | ✅    | ✅    |
+| Pause / unpause      | ✅    | ✅    | ✅    |
+| Permanent delegate   | ❌    | ✅    | ✅    |
+| Transfer hook        | ❌    | ✅    | ✅    |
+| Blacklist / seize    | ❌    | ✅    | ✅    |
+| Confidential transfers | ❌  | ❌    | ✅    |
+| Allowlist (transfer + confidential gate) | ❌ | ❌ | ✅ |
 
-See [SSS-1.md](docs/SSS-1.md) and [SSS-2.md](docs/SSS-2.md) for specs.
+See [SSS-1.md](docs/SSS-1.md), [SSS-2.md](docs/SSS-2.md), and [SSS-3.md](docs/SSS-3.md) for specs.
 
 ## Architecture (high level)
 
@@ -116,6 +118,7 @@ See [SSS-1.md](docs/SSS-1.md) and [SSS-2.md](docs/SSS-2.md) for specs.
 - [DEPLOYMENT.md](docs/DEPLOYMENT.md) — Devnet deployment and proof (Program IDs + example tx links).
 - [SECURITY.md](docs/SECURITY.md) — Access control, error codes, mitigations.
 - [TESTING.md](docs/TESTING.md) — How to run tests and filter by preset.
+- [SSS-1.md](docs/SSS-1.md), [SSS-2.md](docs/SSS-2.md), [SSS-3.md](docs/SSS-3.md) — Preset specs.
 
 ## Tests
 
@@ -123,22 +126,20 @@ See [SSS-1.md](docs/SSS-1.md) and [SSS-2.md](docs/SSS-2.md) for specs.
 anchor test
 ```
 
-Runs integration tests (SSS-1 and SSS-2 flows) and unit-style error cases. Requires a local validator.
-
-Filter by preset: `anchor test -- --grep "SSS-1: integration"` or `--grep "Unit: instruction"`. See [TESTING.md](docs/TESTING.md).
+Runs integration tests (SSS-1, SSS-2, and SSS-3 flows) and unit-style error cases. Requires a local validator. See [TESTING.md](docs/TESTING.md) for describe blocks and filter examples (e.g. `--grep "SSS-3: Allowlist"`).
 
 ## Project structure
 
 ```
 solana-stablecoin-standard/
 ├── programs/
-│   ├── stablecoin/          # Configurable stablecoin (SSS-1 + SSS-2)
-│   └── transfer_hook/       # Blacklist check on transfer (SSS-2)
-├── sdk/                     # @stbr/sss-token (presets, core, compliance)
+│   ├── stablecoin/          # Configurable stablecoin (SSS-1, SSS-2, SSS-3)
+│   └── transfer_hook/       # Blacklist + allowlist check on transfer (SSS-2, SSS-3)
+├── sdk/                     # @stbr/sss-token (presets, core, compliance, confidential)
 ├── cli/                     # sss-token admin CLI
 ├── admin-tui/               # SSS Admin TUI (Ink) — status, mint, burn, freeze, pause, blacklist, allowlist, seize
 ├── frontend/                # Example Next.js UI — wallet, mint status, balance, transfer (uses @stbr/sss-token)
-├── backend/                 # Mint/burn + compliance REST API
+├── backend/                 # Mint/burn + compliance REST API, screening
 ├── tests/
 │   ├── context.ts           # Shared test context (provider, programs, keypairs)
 │   ├── stablecoin.test.ts   # Test runner (registers all suites)
@@ -147,7 +148,7 @@ solana-stablecoin-standard/
 │   ├── ARCHITECTURE.md
 │   ├── SDK.md
 │   ├── OPERATIONS.md
-│   ├── SSS-1.md, SSS-2.md
+│   ├── SSS-1.md, SSS-2.md, SSS-3.md
 │   ├── COMPLIANCE.md
 │   ├── API.md
 │   ├── DEPLOYMENT.md
