@@ -19,7 +19,7 @@ Tests are modular: **`tests/stablecoin.test.ts`** is the runner (shared context 
 | **SSS-1: Vanilla Stablecoin Operations** | SSS-2 preset: init, transfer-hook init, mint, transfer with hook, blacklist add, blocked transfer, seize, thaw, pause/unpause |
 | **SSS-1: integration (mint → transfer → freeze → thaw)** | SSS-1 preset: init (no hook), mint, plain SPL transfer, freeze, thaw |
 | **Preset config tests** | SSS-1/SSS-2 config flags (enableTransferHook, enablePermanentDelegate) via getConfig() |
-| **SSS-3: Allowlist (POC)** | Confidential + allowlist preset, hook extra accounts, add/remove allowlist, transfer blocked then allowed |
+| **SSS-3: Allowlist (POC)** | Confidential + allowlist preset, hook extra accounts, add/remove allowlist, transfer blocked then allowed; getConfidential / fundConfidential allowlist gate, deposit and applyPending instruction building |
 | **Unit: instruction error cases** | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive |
 | **Unit: instruction success cases** | update_roles, configure_minter, transfer_authority, freeze/thaw, remove_from_blacklist |
 | **SDK unit tests** | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load |

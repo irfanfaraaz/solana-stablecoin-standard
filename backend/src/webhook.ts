@@ -2,6 +2,8 @@
  * Webhook dispatch with retry (exponential backoff) and optional secret.
  * Configure via WEBHOOK_URL (all events) or WEBHOOK_URL_<EVENT> per event type.
  */
+import { log } from "./logger";
+
 const RETRIES = 3;
 const BACKOFF_MS = [1000, 2000, 4000];
 const FETCH_TIMEOUT_MS = 10000;
@@ -68,6 +70,8 @@ export function dispatchWebhook(event: WebhookEventType, payload: WebhookPayload
         if (attempt < RETRIES) {
           attempt++;
           setTimeout(doSend, BACKOFF_MS[attempt - 1]);
+        } else {
+          log.error("Webhook delivery failed after retries", { event, url: webhookUrl });
         }
       });
   }

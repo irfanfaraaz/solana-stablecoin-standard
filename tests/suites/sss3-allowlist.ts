@@ -11,6 +11,7 @@ import {
   SolanaStablecoin,
   SSSComplianceModule,
   SSS_3_PRESET,
+  SSS3ConfidentialModule,
 } from "../../sdk/src";
 import type { TestContext } from "../context";
 
@@ -289,6 +290,61 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       );
       expect(Number(user1Acc.amount)).to.equal(50_000);
       expect(Number(user2Acc.amount)).to.equal(50_000);
+    });
+
+    it("getConfidential returns SSS3ConfidentialModule and fundConfidential rejects when not on allowlist", async () => {
+      const confidential = sss3Sdk.getConfidential();
+      expect(confidential).to.be.instanceOf(SSS3ConfidentialModule);
+      const notAllowlistedWallet = anchor.web3.Keypair.generate().publicKey;
+      let thrown = false;
+      try {
+        await confidential.fundConfidential(
+          notAllowlistedWallet,
+          1_000,
+          6,
+        );
+      } catch (e: any) {
+        thrown = true;
+        expect(e?.message ?? String(e)).to.match(
+          /not on allowlist|cannot fund confidential/i,
+        );
+      }
+      expect(thrown).to.be.true;
+    });
+
+    it("fundConfidential builds deposit instruction when wallet is on allowlist", async () => {
+      await sss3Sdk
+        .addToAllowlist(authority.publicKey, user1.publicKey)
+        .then((tx) => tx.rpc());
+      const confidential = sss3Sdk.getConfidential();
+      const ix = await confidential.fundConfidential(
+        user1.publicKey,
+        10_000,
+        6,
+      );
+      expect(ix.programId.equals(TOKEN_2022_PROGRAM_ID)).to.be.true;
+      expect(ix.keys.length).to.equal(3);
+      expect(ix.data.length).to.be.greaterThan(0);
+      const user1Ata = getAssociatedTokenAddressSync(
+        pusdMint,
+        user1.publicKey,
+        true,
+        TOKEN_2022_PROGRAM_ID,
+      );
+      expect(ix.keys[0].pubkey.equals(user1Ata)).to.be.true;
+      expect(ix.keys[1].pubkey.equals(pusdMint)).to.be.true;
+      expect(ix.keys[2].pubkey.equals(user1.publicKey)).to.be.true;
+      expect(ix.keys[2].isSigner).to.be.true;
+    });
+
+    it("applyPending builds instruction with caller-supplied data", () => {
+      const confidential = sss3Sdk.getConfidential();
+      const dummyData = new Uint8Array(32);
+      const ix = confidential.applyPending(user1.publicKey, dummyData);
+      expect(ix.programId.equals(TOKEN_2022_PROGRAM_ID)).to.be.true;
+      expect(ix.keys.length).to.equal(2);
+      expect(ix.keys[0].isWritable).to.be.true;
+      expect(ix.keys[1].isSigner).to.be.true;
     });
   });
 }

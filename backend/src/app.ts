@@ -10,8 +10,23 @@ import * as path from "path";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { getEvents, loadEvents, startIndexer } from "./events";
 import { dispatchWebhook } from "./webhook";
+import { createLogger, log } from "./logger";
+import { screenAddress } from "./screening";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import { SolanaStablecoin, SSSComplianceModule } from "@stbr/sss-token";
+
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string;
+    }
+  }
+}
+
+function generateRequestId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const RPC_URL = process.env.RPC_URL || "https://api.devnet.solana.com";
@@ -67,6 +82,7 @@ function getSdk(mint: PublicKey) {
 function logAudit(event: string, payload: Record<string, unknown>) {
   auditLog.push({ time: new Date().toISOString(), event, payload });
   if (auditLog.length > 10000) auditLog.shift();
+  log.info("audit", { event, ...payload });
 }
 
 async function getSlotForSignature(signature: string): Promise<number | undefined> {
@@ -82,6 +98,12 @@ async function getSlotForSignature(signature: string): Promise<number | undefine
 const app = express();
 app.use(express.json());
 
+app.use((req: Request, _res, next) => {
+  req.requestId = (req.headers["x-request-id"] as string) || generateRequestId();
+  (req as Request & { log: ReturnType<typeof createLogger> }).log = createLogger(req.requestId);
+  next();
+});
+
 app.get("/health", (_req: Request, res: Response) => {
   try {
     const connection = new Connection(RPC_URL);
@@ -94,7 +116,41 @@ app.get("/health", (_req: Request, res: Response) => {
   }
 });
 
+app.post("/screen", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
+  try {
+    const { address: addressStr, mint: mintStr } = req.body as { address: string; mint: string };
+    if (!addressStr || !mintStr) return res.status(400).json({ error: "address and mint required" });
+    const mint = new PublicKey(mintStr);
+    const address = new PublicKey(addressStr);
+    const sdk = getSdk(mint);
+    const result = await screenAddress(sdk, address);
+    res.json(result);
+  } catch (e: any) {
+    logger.error(e?.message || String(e), { path: "/screen" });
+    res.status(400).json({ error: e?.message || String(e) });
+  }
+});
+
+app.get("/screen", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
+  try {
+    const addressStr = req.query.address as string;
+    const mintStr = req.query.mint as string;
+    if (!addressStr || !mintStr) return res.status(400).json({ error: "query params address and mint required" });
+    const mint = new PublicKey(mintStr);
+    const address = new PublicKey(addressStr);
+    const sdk = getSdk(mint);
+    const result = await screenAddress(sdk, address);
+    res.json(result);
+  } catch (e: any) {
+    logger.error(e?.message || String(e), { path: "/screen" });
+    res.status(400).json({ error: e?.message || String(e) });
+  }
+});
+
 app.post("/mint", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
   try {
     const { mint: mintStr, recipient, amount } = req.body as { mint?: string; recipient: string; amount: string };
     const mint = new PublicKey(mintStr || DEFAULT_MINT);
@@ -103,6 +159,8 @@ app.post("/mint", async (req: Request, res: Response) => {
     const sdk = getSdk(mint);
     const config = await sdk.getConfig();
     if (config.isPaused) return res.status(400).json({ error: "Program is paused" });
+    const screening = await screenAddress(sdk, recipientPubkey);
+    if (!screening.allowed) return res.status(403).json({ error: screening.reason || "Screening failed" });
     const tx = await sdk.mint(keypair.publicKey, recipientPubkey, amount);
     const sig = await tx.rpc();
     logAudit("mint", { mint: mint.toBase58(), recipient, amount, signature: sig });
@@ -110,11 +168,13 @@ app.post("/mint", async (req: Request, res: Response) => {
     dispatchWebhook("mint", { event: "mint", mint: mint.toBase58(), signature: sig, slot, recipient, amount });
     res.json({ signature: sig });
   } catch (e: any) {
+    logger.error(e?.message || String(e), { mint: (req.body as any)?.mint, recipient: (req.body as any)?.recipient });
     res.status(400).json({ error: e?.message || String(e) });
   }
 });
 
 app.post("/burn", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
   try {
     const { mint: mintStr, amount, from: fromStr } = req.body as { mint?: string; amount: string; from?: string };
     const mint = new PublicKey(mintStr || DEFAULT_MINT);
@@ -123,6 +183,8 @@ app.post("/burn", async (req: Request, res: Response) => {
     const sdk = getSdk(mint);
     const config = await sdk.getConfig();
     if (config.isPaused) return res.status(400).json({ error: "Program is paused" });
+    const screening = await screenAddress(sdk, from);
+    if (!screening.allowed) return res.status(403).json({ error: screening.reason || "Screening failed" });
     const tx = await sdk.burn(keypair.publicKey, from, amount);
     const sig = await tx.rpc();
     logAudit("burn", { mint: mint.toBase58(), amount, from: from.toBase58(), signature: sig });
@@ -130,11 +192,13 @@ app.post("/burn", async (req: Request, res: Response) => {
     dispatchWebhook("burn", { event: "burn", mint: mint.toBase58(), signature: sig, slot, amount, from: from.toBase58() });
     res.json({ signature: sig });
   } catch (e: any) {
+    logger.error(e?.message || String(e), { mint: (req.body as any)?.mint, from: (req.body as any)?.from });
     res.status(400).json({ error: e?.message || String(e) });
   }
 });
 
 app.post("/blacklist/add", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
   try {
     const { mint: mintStr, address: addressStr, reason } = req.body as { mint?: string; address: string; reason?: string };
     const mint = new PublicKey(mintStr || DEFAULT_MINT);
@@ -149,11 +213,13 @@ app.post("/blacklist/add", async (req: Request, res: Response) => {
     dispatchWebhook("blacklist_add", { event: "blacklist_add", mint: mint.toBase58(), signature: sig, slot, address: addressStr, reason });
     res.json({ signature: sig });
   } catch (e: any) {
+    logger.error(e?.message || String(e), { address: (req.body as any)?.address });
     res.status(400).json({ error: e?.message || String(e) });
   }
 });
 
 app.post("/blacklist/remove", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
   try {
     const { mint: mintStr, address: addressStr } = req.body as { mint?: string; address: string };
     const mint = new PublicKey(mintStr || DEFAULT_MINT);
@@ -168,11 +234,13 @@ app.post("/blacklist/remove", async (req: Request, res: Response) => {
     dispatchWebhook("blacklist_remove", { event: "blacklist_remove", mint: mint.toBase58(), signature: sig, slot, address: addressStr });
     res.json({ signature: sig });
   } catch (e: any) {
+    logger.error(e?.message || String(e), { address: (req.body as any)?.address });
     res.status(400).json({ error: e?.message || String(e) });
   }
 });
 
 app.post("/seize", async (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
   try {
     const { mint: mintStr, from: fromStr, treasury: treasuryStr, amount: amountStr } = req.body as {
       mint?: string;
@@ -222,6 +290,7 @@ app.get("/audit/export", (req: Request, res: Response) => {
 });
 
 app.get("/events", (req: Request, res: Response) => {
+  const logger = (req as Request & { log: ReturnType<typeof createLogger> }).log;
   try {
     loadEvents();
     const mint = typeof req.query.mint === "string" ? req.query.mint : undefined;
@@ -230,22 +299,23 @@ app.get("/events", (req: Request, res: Response) => {
     const list = getEvents({ mint, limit: isNaN(limit) ? 50 : limit, before });
     res.json({ events: list });
   } catch (e: any) {
+    logger.error(e?.message || String(e));
     res.status(500).json({ error: e?.message || String(e) });
   }
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`SSS backend listening on port ${PORT}; RPC=${RPC_URL}`);
+  log.info(`SSS backend listening on port ${PORT}; RPC=${RPC_URL}`);
   const indexerEnabled = process.env.INDEXER_ENABLED === "true" || process.env.INDEXER_ENABLED === "1";
   if (indexerEnabled) {
     const conn = new Connection(RPC_URL);
     const programId = new PublicKey(PROGRAM_IDS.stablecoin);
     const pollMs = parseInt(process.env.INDEXER_POLL_MS || "8000", 10);
     startIndexer(conn, programId, isNaN(pollMs) ? 8000 : pollMs);
-    console.log(`Indexer started (poll ${pollMs}ms)`);
+    log.info(`Indexer started (poll ${pollMs}ms)`);
   }
 });
 
 server.on("error", (err) => {
-  console.error("Server error:", err);
+  log.error("Server error", { error: String(err) });
 });

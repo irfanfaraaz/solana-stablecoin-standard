@@ -17,6 +17,7 @@ import {
 } from "@solana/spl-token";
 import type { Stablecoin } from "../../target/types/stablecoin";
 import type { TransferHook } from "../../target/types/transfer_hook";
+import { SSS3ConfidentialModule } from "./confidential";
 
 /** Config for creating a new stablecoin (name, symbol, etc.). Stored on-chain in StablecoinConfig. */
 export interface StablecoinConfig {
@@ -95,6 +96,15 @@ export class SolanaStablecoin {
     this.program = program;
     this.mintAddress = mintAddress;
     this.transferHookProgram = transferHookProgram;
+  }
+
+  /**
+   * SSS-3: Returns the confidential transfer module when mint is configured for
+   * confidential transfers. Throws if mintAddress is not set.
+   */
+  getConfidential(): SSS3ConfidentialModule {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    return new SSS3ConfidentialModule(this, this.mintAddress);
   }
 
   // PDA getters

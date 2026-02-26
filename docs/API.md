@@ -20,7 +20,16 @@ This document describes the **backend API** expected for Phase E (mint/burn serv
 | POST | `/mint` | Mint tokens to a recipient | `{ "mint": "<mint_pubkey>", "recipient": "<pubkey>", "amount": "<string>" }` |
 | POST | `/burn` | Burn tokens (from configured burner ATA or specified account) | `{ "mint": "<mint_pubkey>", "amount": "<string>", "from?: "<ata_pubkey>" }` |
 
-Response: `{ "signature": "<tx_sig>" }` or error payload. Service should validate against stablecoin config (e.g. pause, minter/quota) before submitting.
+Response: `{ "signature": "<tx_sig>" }` or error payload. Service should validate against stablecoin config (e.g. pause, minter/quota) before submitting. Mint and burn run a **verify** step (screening) before execution; if screening fails, the API returns 403.
+
+## Screening API
+
+| Method | Path | Description | Body / Query |
+|--------|------|-------------|--------------|
+| POST | `/screen` | Check if an address is allowed for a mint (on-chain blacklist) | Body: `{ "address": "<pubkey>", "mint": "<pubkey>" }` |
+| GET | `/screen` | Same as POST, with query params | `?address=<pubkey>&mint=<pubkey>` |
+
+Response: `{ "allowed": boolean, "reason"?: string }`. Used by operators and frontends to check an address before mint/transfer.
 
 ## Compliance (SSS-2)
 

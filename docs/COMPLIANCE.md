@@ -5,7 +5,8 @@ This document outlines regulatory considerations and audit-trail expectations fo
 ## Regulatory context
 
 - **GENIUS Act–style controls:** Stablecoin issuers may need to support freeze, seize, and blocking of transfers to/from designated parties. SSS-2 provides on-chain primitives (freeze, blacklist, seize) that backends can drive and log.
-- **OFAC / sanctions:** Full sanctions screening is **not** implemented in this repo; the blacklist is an on-chain list that operators (or a compliance service) populate. Integration with external screening services is a backend responsibility.
+- **OFAC / sanctions:** Full sanctions screening is **not** implemented in this repo; the blacklist is an on-chain list that operators (or a compliance service) populate.
+- **Screening API:** The backend exposes `POST /screen` and `GET /screen` (see [API.md](API.md)) that return `{ "allowed": boolean, "reason"?: string }` for a given address and mint. The backend resolves the blacklist PDA for the mint and address and fetches the account; if the address is blacklisted, it returns `allowed: false`. The same logic runs in the **verify** step before POST `/mint` and POST `/burn` (403 if not allowed).
 - **Audit trail:** Operators should log who added/removed blacklist entries, who executed seizes, and when; see below.
 
 ## What to log (audit trail)
