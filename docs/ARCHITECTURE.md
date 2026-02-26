@@ -2,11 +2,11 @@
 
 ## Layer model
 
-| Layer | Description | Artifacts |
-|-------|-------------|-----------|
-| **L1 Base** | Core stablecoin program + Token-2022 | `programs/stablecoin`, config/roles/minter PDAs |
-| **L2 Modules** | Optional extensions | Transfer hook program, blacklist PDAs, seize CPI |
-| **L3 Presets** | Predefined configs | SSS-1 (no hook), SSS-2 (hook + blacklist), SSS-3 (hook + allowlist + confidential) |
+| Layer          | Description                          | Artifacts                                                                          |
+| -------------- | ------------------------------------ | ---------------------------------------------------------------------------------- |
+| **L1 Base**    | Core stablecoin program + Token-2022 | `programs/stablecoin`, config/roles/minter PDAs                                    |
+| **L2 Modules** | Optional extensions                  | Transfer hook program, blacklist PDAs, seize CPI                                   |
+| **L3 Presets** | Predefined configs                   | SSS-1 (no hook), SSS-2 (hook + blacklist), SSS-3 (hook + allowlist + confidential) |
 
 ## Data flows
 
@@ -44,14 +44,14 @@
 
 ## PDAs and seeds
 
-| Account   | Program        | Seeds |
-|----------|----------------|-------|
-| Mint     | stablecoin     | `["mint", symbol]` |
-| Config   | stablecoin     | `["config", mint]` |
-| Roles    | stablecoin     | `["roles", mint]` |
-| Minter   | stablecoin     | `["minter", mint, minter_pubkey]` |
+| Account               | Program       | Seeds                                             |
+| --------------------- | ------------- | ------------------------------------------------- |
+| Mint                  | stablecoin    | `["mint", symbol]`                                |
+| Config                | stablecoin    | `["config", mint]`                                |
+| Roles                 | stablecoin    | `["roles", mint]`                                 |
+| Minter                | stablecoin    | `["minter", mint, minter_pubkey]`                 |
 | BlacklistEntry (hook) | transfer_hook | Defined in hook; resolved via extra-account-metas |
-| AllowlistEntry        | stablecoin    | `["allowlist", mint, wallet]` (SSS-3) |
+| AllowlistEntry        | stablecoin    | `["allowlist", mint, wallet]` (SSS-3)             |
 
 ## Config account (on-chain)
 

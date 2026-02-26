@@ -9,7 +9,7 @@ Reference implementation of the Solana Stablecoin Standard: a configurable Token
 - **TypeScript SDK** (`@stbr/sss-token`): Create/load stablecoins, operations, presets, compliance module.
 - **Admin CLI** (`sss-token`): Init, mint, burn, freeze, thaw, pause, blacklist, seize, status, supply, minters.
 - **Admin TUI** (`sss-tui`): Interactive terminal UI (Ink) for status, mint, burn, freeze/thaw, pause/unpause, blacklist, allowlist, seize.
-- **Example frontend** (`frontend`): Next.js app using the SDK for mint status, balance, and transfers (Wallet Standard + @solana/react-hooks).
+- **Example frontend** (`frontend`): Next.js app using the SDK — tabbed UI (Overview, Create, Compliance, Admin, Audit), wallet connect, mint picker (directory modal backed by `/api/getmints`), status, balance, transfer, screening, blacklist/allowlist/seize, configure minter, mint/burn, freeze/pause, and authority-aware banners when the connected wallet is not the master authority.
 
 ## Quick start
 
@@ -68,25 +68,25 @@ Open the app, connect a wallet, paste the mint address, and use the UI for statu
 
 Default RPC is **devnet** (`https://api.devnet.solana.com`). CLI, TUI, backend, and frontend use these program IDs (same on devnet and localnet for this repo):
 
-| Program        | ID (devnet and localnet) |
-|----------------|--------------------------|
-| stablecoin     | `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM` |
-| transfer_hook  | `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi` |
+| Program       | ID (devnet and localnet)                       |
+| ------------- | ---------------------------------------------- |
+| stablecoin    | `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM` |
+| transfer_hook | `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi` |
 
 For local tests run `anchor test` (starts a local validator). For devnet deployment proof and example tx links, see [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Preset comparison
 
-| Feature              | SSS-1 | SSS-2 | SSS-3 |
-|----------------------|-------|-------|-------|
-| Token-2022 mint      | ✅    | ✅    | ✅    |
-| Freeze / thaw        | ✅    | ✅    | ✅    |
-| Pause / unpause      | ✅    | ✅    | ✅    |
-| Permanent delegate   | ❌    | ✅    | ✅    |
-| Transfer hook        | ❌    | ✅    | ✅    |
-| Blacklist / seize    | ❌    | ✅    | ✅    |
-| Confidential transfers | ❌  | ❌    | ✅    |
-| Allowlist (transfer + confidential gate) | ❌ | ❌ | ✅ |
+| Feature                                  | SSS-1 | SSS-2 | SSS-3 |
+| ---------------------------------------- | ----- | ----- | ----- |
+| Token-2022 mint                          | ✅    | ✅    | ✅    |
+| Freeze / thaw                            | ✅    | ✅    | ✅    |
+| Pause / unpause                          | ✅    | ✅    | ✅    |
+| Permanent delegate                       | ❌    | ✅    | ✅    |
+| Transfer hook                            | ❌    | ✅    | ✅    |
+| Blacklist / seize                        | ❌    | ✅    | ✅    |
+| Confidential transfers                   | ❌    | ❌    | ✅    |
+| Allowlist (transfer + confidential gate) | ❌    | ❌    | ✅    |
 
 See [SSS-1.md](docs/SSS-1.md), [SSS-2.md](docs/SSS-2.md), and [SSS-3.md](docs/SSS-3.md) for specs.
 

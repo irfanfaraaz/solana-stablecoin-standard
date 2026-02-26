@@ -90,5 +90,8 @@ Run from repo root with Devnet RPC and keypair funded on Devnet.
 | Example: init tx (SSS-2 "Devnet Coin" / DCOIN) | [1p6QUvtRC...GzTRLAH](https://explorer.solana.com/tx/1p6QUvtRCjMT9ZD5R6fHqkjudvRMXYud31mFLjoXV54C27EE4oJpmivcgY9HWAcgBncKEYQdFzN2pyYpGzTRLAH?cluster=devnet) |
 | Example: add minter tx | [3He7Yksm9...gM3QFPP](https://explorer.solana.com/tx/3He7Yksm9wDCwNGncWn7Ripsi6sTzmFveSFBctj5TFtPohzYKtwkNP9hLBaGzBdDfa4SQdL9rZfCn9vr5gM3QFPP?cluster=devnet) |
 | Example: mint tx (1000 DCOIN) | [4cpXcSi4W...xb5CMky1](https://explorer.solana.com/tx/4cpXcSi4WuuPK9LXXpmn6b85MhKwDzJ8jBTnVtu5veHnoVkGhDiLRqAesZPEVBUFPaKMUuuapQevnveLxb5CMky1?cluster=devnet) |
+| Example: blacklist add | [96mZPcNCSk8...k6Xt6](https://explorer.solana.com/tx/96mZPcNCSk8E1t7EfGBM1pq5FByeYJ57nzGmKVhmLqWyuaQVJAwic2MwzAvaQMnvtpJmwq1MP2BEaMAx69k6Xt6?cluster=devnet) |
 
 **Mint address (example stablecoin):** `9uengGxYvYU9hRSnxHoZfFVk9nu9X2DKQoKwkrhXFqQW`
+
+You can verify the mint on devnet: `yarn cli status -m 9uengGxYvYU9hRSnxHoZfFVk9nu9X2DKQoKwkrhXFqQW --rpc-url https://api.devnet.solana.com`. Transaction links also work on [Solscan](https://solscan.io/) (devnet): `https://solscan.io/tx/<signature>?cluster=devnet`.

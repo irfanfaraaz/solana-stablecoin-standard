@@ -3,10 +3,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import type { Idl } from "@coral-xyz/anchor";
-import {
-  STABLECOIN_PROGRAM_ID,
-  RPC_URL,
-} from "./constants";
+import { STABLECOIN_PROGRAM_ID, RPC_URL } from "./constants";
 import { fetchIdl } from "./sdk-browser";
 
 /** Minimal config row for directory listing (mint, name, symbol, etc.). */
@@ -57,7 +54,9 @@ export async function fetchAllStablecoinConfigs(
     const all = await connection.getProgramAccounts(programId, {
       commitment: "confirmed",
     });
-    accounts = all.filter((a) => a.account.data.length >= 400 && a.account.data.length <= 500);
+    accounts = all.filter(
+      (a) => a.account.data.length >= 400 && a.account.data.length <= 500
+    );
   }
 
   const rows: StablecoinConfigRow[] = [];
@@ -75,20 +74,28 @@ export async function fetchAllStablecoinConfigs(
         enable_allowlist?: boolean;
         enable_confidential_transfers?: boolean;
       };
-      const mint = decoded.mint?.toBase58?.() ?? (decoded.mint as unknown as string);
+      const mint =
+        decoded.mint?.toBase58?.() ?? (decoded.mint as unknown as string);
       rows.push({
         mint: typeof mint === "string" ? mint : "",
         name: decoded.name ?? "",
         symbol: decoded.symbol ?? "",
         decimals: Number(decoded.decimals ?? 0),
         isPaused: Boolean(decoded.is_paused ?? (decoded as any).isPaused),
-        enableAllowlist: Boolean(decoded.enable_allowlist ?? (decoded as any).enableAllowlist),
-        enableConfidentialTransfers: Boolean(decoded.enable_confidential_transfers ?? (decoded as any).enableConfidentialTransfers),
+        enableAllowlist: Boolean(
+          decoded.enable_allowlist ?? (decoded as any).enableAllowlist
+        ),
+        enableConfidentialTransfers: Boolean(
+          decoded.enable_confidential_transfers ??
+          (decoded as any).enableConfidentialTransfers
+        ),
       });
     } catch {
       // skip unreadable accounts
     }
   }
-  rows.sort((a, b) => a.symbol.localeCompare(b.symbol) || a.mint.localeCompare(b.mint));
+  rows.sort(
+    (a, b) => a.symbol.localeCompare(b.symbol) || a.mint.localeCompare(b.mint)
+  );
   return rows;
 }
