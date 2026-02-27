@@ -29,7 +29,11 @@ Use the workspace package or `file:../sdk` in your app.
 **Quick start** (preset init + operations + compliance):
 
 ```ts
-import { SolanaStablecoin, SSSComplianceModule, Presets } from "@stbr/sss-token";
+import {
+  SolanaStablecoin,
+  SSSComplianceModule,
+  Presets,
+} from "@stbr/sss-token";
 
 // Preset initialization
 const stable = await SolanaStablecoin.createFromConnection(connection, {
@@ -56,10 +60,16 @@ const custom = await SolanaStablecoin.createFromConnection(connection, {
 });
 
 // Operations
-await stable.mint(adminKeypair.publicKey, recipient, 1_000_000).then((tx) => tx.rpc());
+await stable
+  .mint(adminKeypair.publicKey, recipient, 1_000_000)
+  .then((tx) => tx.rpc());
 const compliance = new SSSComplianceModule(stable);
-await compliance.addToBlacklist(adminKeypair.publicKey, address, "Sanctions match").then((tx) => tx.rpc()); // SSS-2
-await compliance.seize(adminKeypair.publicKey, frozenAccount, treasury, amount).then((tx) => tx.rpc());     // SSS-2
+await compliance
+  .addToBlacklist(adminKeypair.publicKey, address, "Sanctions match")
+  .then((tx) => tx.rpc()); // SSS-2
+await compliance
+  .seize(adminKeypair.publicKey, frozenAccount, treasury, amount)
+  .then((tx) => tx.rpc()); // SSS-2
 const supply = await stable.getTotalSupply();
 ```
 
@@ -76,6 +86,26 @@ const config: StablecoinConfig = {
 ```
 
 ## Create and load
+
+**SDK create + mint flow:**
+
+```mermaid
+sequenceDiagram
+  participant App
+  participant SDK as SolanaStablecoin
+  participant SC as Stablecoin program
+  participant Token as Token-2022
+
+  App->>SDK: createFromConnection(...)
+  SDK->>SC: initialize(...)
+  SC->>Token: create mint, config, roles
+  SDK->>App: instance with mintAddress
+
+  App->>SDK: mint(authority, recipient, amount)
+  SDK->>SC: mint instruction
+  SC->>Token: mint to ATA
+  SDK->>App: tx builder (.rpc())
+```
 
 **Create from Connection** (Node: loads IDL from `target/idl`; matches req example):
 
@@ -97,10 +127,10 @@ const stable = await SolanaStablecoin.createFromConnection(connection, {
 
 ```ts
 const sdk = await SolanaStablecoin.create(
-  program,           // Anchor Program<Stablecoin>
-  authority,         // PublicKey
+  program, // Anchor Program<Stablecoin>
+  authority, // PublicKey
   config,
-  transferHookProgram // optional Program<TransferHook>
+  transferHookProgram, // optional Program<TransferHook>
 );
 // sdk.mintAddress is set
 ```
@@ -108,11 +138,7 @@ const sdk = await SolanaStablecoin.create(
 **Load** (bind to existing mint):
 
 ```ts
-const sdk = SolanaStablecoin.load(
-  program,
-  mintAddress,
-  transferHookProgram
-);
+const sdk = SolanaStablecoin.load(program, mintAddress, transferHookProgram);
 ```
 
 ## Operations
@@ -136,9 +162,11 @@ Assume `sdk` is a `SolanaStablecoin` with `mintAddress` set.
 ```ts
 const compliance = new SSSComplianceModule(sdk);
 // After init, run once to set extra-account-metas for the mint:
-await compliance.initializeTransferHookExtraAccounts(authority).then(tx => tx.rpc());
+await compliance
+  .initializeTransferHookExtraAccounts(authority)
+  .then((tx) => tx.rpc());
 // Then:
-compliance.addToBlacklist(blacklister, address);           // optional 3rd arg: reason (audit only, not on-chain)
+compliance.addToBlacklist(blacklister, address); // optional 3rd arg: reason (audit only, not on-chain)
 compliance.removeFromBlacklist(blacklister, address);
 compliance.seize(seizer, fromAccount, treasury, amount);
 ```
@@ -154,8 +182,15 @@ amount into the existing `mint` / `burn` instructions.
 The SDK exposes a small helper in `sdk/src/oracle.ts`:
 
 ```ts
-import type { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { SYSVAR_SLOT_HASHES_PUBKEY, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
+import type {
+  Connection,
+  PublicKey,
+  TransactionInstruction,
+} from "@solana/web3.js";
+import {
+  SYSVAR_SLOT_HASHES_PUBKEY,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+} from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor";
 import type { Oracle } from "../target/types/oracle";
 import { computeMintAmountFromOracle } from "@stbr/sss-token";
@@ -165,11 +200,18 @@ async function quoteMintAmountFromOracle(params: {
   connection: Connection;
   oracleProgram: Program<Oracle>;
   queue: PublicKey;
-  pegAmount: bigint;      // e.g. 100_000_000n for 100.000000
-  tokenDecimals: number;  // e.g. 6
+  pegAmount: bigint; // e.g. 100_000_000n for 100.000000
+  tokenDecimals: number; // e.g. 6
   preInstructions: TransactionInstruction[]; // Switchboard update + Ed25519 verify
 }): Promise<bigint> {
-  const { connection, oracleProgram, queue, pegAmount, tokenDecimals, preInstructions } = params;
+  const {
+    connection,
+    oracleProgram,
+    queue,
+    pegAmount,
+    tokenDecimals,
+    preInstructions,
+  } = params;
 
   const amount = await computeMintAmountFromOracle({
     connection,

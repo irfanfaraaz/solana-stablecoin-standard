@@ -76,6 +76,21 @@ Output: `mint`, `configPda`, `signature`; for SSS-2 also `transferHookInitSignat
 
 ## Runbook summary
 
+```mermaid
+flowchart LR
+  A[Init] --> B[Configure minters]
+  B --> C[Mint / Burn]
+  C --> D[Monitor status]
+  D --> E{Pause?}
+  E -->|Yes| F[Pause / Unpause]
+  E -->|No| G{Compliance?}
+  G -->|SSS-2| H[Blacklist / Seize]
+  G -->|SSS-3| I[Allowlist]
+  F --> D
+  H --> D
+  I --> D
+```
+
 1. **Init:** Choose preset or custom; run `init`; record mint and configPda.
 2. **Mint:** Use a keypair that is an authorized minter (or add one via `minters add`).
 3. **Freeze / Thaw:** Use pauser keypair; specify token account address.

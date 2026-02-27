@@ -92,6 +92,23 @@ Errors are surfaced through normal Anchor error codes and logs.
 
 ## Transaction flow
 
+```mermaid
+sequenceDiagram
+  participant Client
+  participant Switchboard as Switchboard (update)
+  participant Verify as Ed25519 verify
+  participant Oracle as Oracle program
+  participant Stablecoin as Stablecoin program
+
+  Note over Client,Stablecoin: Same transaction
+  Client->>Switchboard: 1. Feed update ix
+  Client->>Verify: 2. Verify ix (index 1)
+  Client->>Oracle: 3. compute_mint_amount(peg, decimals)
+  Oracle->>Oracle: verify quote at ix 1, compute amount
+  Oracle-->>Client: return data (u64 token amount)
+  Client->>Stablecoin: 4. mint(amount) in separate tx or later
+```
+
 The oracle relies on a specific **instruction ordering** contract:
 
 1. Switchboard update instruction for the chosen feed.

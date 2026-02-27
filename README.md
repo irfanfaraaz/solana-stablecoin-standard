@@ -104,23 +104,43 @@ See [SSS-1.md](docs/SSS-1.md), [SSS-2.md](docs/SSS-2.md), and [SSS-3.md](docs/SS
 
 ## Architecture (high level)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  CLI (sss-token) / Backend / Frontend                       │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼──────────────────────────────────┐
-│  TypeScript SDK (@stbr/sss-token)                            │
-│  SolanaStablecoin, SSSComplianceModule, Presets              │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼──────────────────────────────────┐
-│  Stablecoin program (config, roles, mint, burn, freeze, …)    │
-│  + Transfer hook program (blacklist / allowlist checks)      │
-│  + Oracle program (price-based mint / redeem helper)         │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-                    Token-2022 / SPL
+```mermaid
+flowchart TB
+  subgraph Clients["Clients"]
+    CLI[sss-token CLI]
+    TUI[Admin TUI]
+    FE[Next.js Frontend]
+    BE[Backend API]
+  end
+
+  subgraph SDK["TypeScript SDK"]
+    Core[SolanaStablecoin]
+    Compliance[SSSComplianceModule]
+    Presets[Presets]
+  end
+
+  subgraph OnChain["On-chain programs"]
+    SC[Stablecoin program]
+    TH[Transfer hook program]
+    Oracle[Oracle program]
+  end
+
+  SPL[Token-2022 / SPL]
+
+  CLI --> Core
+  TUI --> Core
+  FE --> Core
+  BE --> Core
+  Core --> Compliance
+  Core --> Presets
+
+  Core --> SC
+  Compliance --> TH
+  Core --> Oracle
+
+  SC --> SPL
+  TH --> SPL
+  Oracle -.->|"return data"| Core
 ```
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Layer model, PDAs, security.

@@ -71,19 +71,19 @@ Existing configs deployed before this layout may have empty name/symbol/uri when
 - **Pause:** When `is_paused` is true, mint/burn/freeze/thaw and other mutating instructions are blocked.
 - **Transfer hook:** Only runs when mint has transfer-hook extension; hook validates blacklist using accounts provided by extra-account-metas.
 
-## Diagram (Mermaid)
+## Layer diagram
 
 ```mermaid
 flowchart TB
-  subgraph Client
-    CLI[sss-token CLI]
+  subgraph Clients["Clients"]
+    CLI[CLI]
     SDK[TypeScript SDK]
   end
-  subgraph Programs
+  subgraph Programs["Programs"]
     SC[Stablecoin Program]
     TH[Transfer Hook Program]
   end
-  subgraph Token2022
+  subgraph Token2022["Token-2022"]
     Mint[Mint]
     ATA[Token Accounts]
   end
@@ -93,4 +93,60 @@ flowchart TB
   SC --> Mint
   SC --> ATA
   TH --> ATA
+```
+
+## PDA relationships
+
+```mermaid
+erDiagram
+  Mint ||--|| Config : "config PDA"
+  Mint ||--|| Roles : "roles PDA"
+  Mint ||--o{ Minter : "per minter"
+  Mint ||--o{ BlacklistEntry : "transfer_hook"
+  Mint ||--o{ AllowlistEntry : "SSS-3"
+  Mint ||--|| ExtraAccountMetaList : "transfer_hook"
+
+  Mint {
+    string symbol
+    PDA seeds
+  }
+  Config {
+    master_authority
+    decimals
+    is_paused
+    flags
+  }
+  Roles {
+    burner
+    pauser
+    blacklister
+    seizer
+  }
+  Minter {
+    daily_quota
+    is_active
+  }
+```
+
+## Transfer with hook (SSS-2 / SSS-3)
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Token2022 as Token-2022
+  participant Hook as Transfer hook
+  participant Blacklist as Blacklist PDAs
+
+  User->>Token2022: transfer (with hook)
+  Token2022->>Hook: invoke hook
+  Hook->>Blacklist: check sender & recipient
+  alt Blacklisted
+    Blacklist-->>Hook: blocked
+    Hook-->>Token2022: fail
+    Token2022-->>User: Blacklisted
+  else Allowed (SSS-3: allowlist check)
+    Blacklist-->>Hook: ok
+    Hook-->>Token2022: ok
+    Token2022-->>User: success
+  end
 ```

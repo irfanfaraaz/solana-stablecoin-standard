@@ -4,6 +4,14 @@ Submission requirement: **Devnet deployment proof (Program ID + example transact
 
 ## Deploy to Devnet
 
+```mermaid
+flowchart LR
+  A[Anchor.toml devnet] --> B[anchor deploy]
+  B --> C[Note program IDs]
+  C --> D[Update env / docs]
+  D --> E[Example txs]
+```
+
 1. **Configure cluster and wallet**
 
    In `Anchor.toml` add (or merge) a devnet section:

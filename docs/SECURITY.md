@@ -2,6 +2,24 @@
 
 ## Access control
 
+```mermaid
+flowchart LR
+  subgraph Roles["Roles PDA (per mint)"]
+    MA[Master authority]
+    M[Minter]
+    B[Burner]
+    P[Pauser]
+    BL[Blacklister]
+    S[Seizer]
+  end
+  MA --> M
+  MA --> B
+  MA --> P
+  MA --> BL
+  MA --> S
+  M -.->|quota| M
+```
+
 - **Roles** (single roles PDA per mint): Master authority, minter (with per-minter daily quota), burner, pauser, blacklister (SSS-2), seizer (SSS-2). No single key has all powers.
 - **Feature gating:** Compliance instructions (`add_to_blacklist`, `remove_from_blacklist`, `seize`) return **ComplianceNotEnabled** if the mint was initialized without `enable_transfer_hook`. Seize also requires **PermanentDelegateNotEnabled** check when permanent delegate is off.
 - **Pause:** When `config.is_paused` is true, mint, burn, freeze, thaw and other mutating instructions are blocked ( **ProgramPaused** ).

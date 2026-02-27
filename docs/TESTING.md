@@ -8,7 +8,40 @@ From repo root:
 anchor test
 ```
 
-Starts a local validator, deploys the stablecoin and transfer_hook programs, then runs the TypeScript test suite. Expect ~1–2 minutes; 30 tests (SSS-1/SSS-2/SSS-3 flows, preset config, unit error/success cases, SDK unit tests).
+Starts a local validator, deploys the stablecoin, transfer_hook, and oracle programs, then runs the TypeScript test suite. Expect ~1–2 minutes; 34 tests (SSS-1/SSS-2/SSS-3 flows, preset config, unit error/success cases, SDK unit tests, oracle module).
+
+## Test stack
+
+```mermaid
+flowchart TB
+  subgraph Runner["anchor test"]
+    Validator[Local validator]
+    Deploy[Deploy programs]
+    TS[TypeScript suite]
+  end
+  subgraph Suites["Suites"]
+    S1[SSS-1 Vanilla]
+    S2[SSS-1 Integration]
+    S3[Preset config]
+    S4[SSS-3 Allowlist]
+    S5[Unit errors]
+    S6[Unit success]
+    S7[SDK unit]
+    S8[Oracle module]
+  end
+
+  Runner --> Validator
+  Deploy --> Validator
+  TS --> Deploy
+  TS --> S1
+  TS --> S2
+  TS --> S3
+  TS --> S4
+  TS --> S5
+  TS --> S6
+  TS --> S7
+  TS --> S8
+```
 
 ## Test layout
 
@@ -23,6 +56,7 @@ Tests are modular: **`tests/stablecoin.test.ts`** is the runner (shared context 
 | **Unit: instruction error cases** | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive |
 | **Unit: instruction success cases** | update_roles, configure_minter, transfer_authority, freeze/thaw, remove_from_blacklist |
 | **SDK unit tests** | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load |
+| **Oracle module** | compute_mint_amount fails without Switchboard instruction (smoke) |
 
 ## Trident fuzz
 

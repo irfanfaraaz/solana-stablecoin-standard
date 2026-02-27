@@ -21,6 +21,31 @@ For **blacklist** and **seize** operations, a compliance/audit service (or index
 
 Additional context (tx signature, block, RPC request id) can be stored for traceability.
 
+## Compliance flow
+
+```mermaid
+flowchart LR
+  subgraph OffChain["Off-chain"]
+    Screen[Screen address]
+    Policy[Policy / reason]
+    Audit[Audit log]
+  end
+  subgraph Backend["Backend"]
+    API[POST /screen, /mint, /burn]
+    Verify[Verify not blacklisted]
+  end
+  subgraph OnChain["On-chain"]
+    Blacklist[Blacklist PDAs]
+    Tx[Blacklist / Seize tx]
+  end
+
+  Screen --> API
+  API --> Verify
+  Verify --> Blacklist
+  Policy --> Audit
+  Tx --> Audit
+```
+
 ## On-chain vs off-chain
 
 - **On-chain:** Blacklist state (who is listed), config (roles, pause), and transaction history are on Solana; explorers can show them.
