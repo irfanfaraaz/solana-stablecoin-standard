@@ -64,6 +64,16 @@ yarn frontend:dev               # Start dev server
 
 Open the app, connect a wallet, paste the mint address, and use the UI for status, balance, and transfers. See [frontend/README.md](frontend/README.md).
 
+**Backend (Docker):**
+
+Run `anchor build` before `docker compose build` so `target/idl` exists (the image copies IDLs and SDK). Then:
+
+```bash
+docker compose up
+```
+
+Backend serves on port 3000 (mint/burn, compliance, health, audit). See [docs/API.md](docs/API.md) and [backend/README.md](backend/README.md).
+
 ## Program IDs (devnet / localnet)
 
 Default RPC is **devnet** (`https://api.devnet.solana.com`). CLI, TUI, backend, and frontend use these program IDs (same on devnet and localnet for this repo):

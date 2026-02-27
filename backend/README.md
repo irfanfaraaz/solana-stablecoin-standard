@@ -17,6 +17,8 @@ Or from repo root: `cd backend && WORKSPACE_ROOT=.. yarn start` after building.
 
 Env: `RPC_URL`, `KEYPAIR_PATH` or `KEYPAIR_JSON`, optional `MINT_ADDRESS`, `PORT` (default 3000). Indexer: `INDEXER_ENABLED=true`, `INDEXER_POLL_MS` (default 8000), `DATA_DIR` (for events file). Webhooks: `WEBHOOK_URL` or `WEBHOOK_URL_<EVENT>`, optional `WEBHOOK_SECRET`.
 
+**Request flow:** Each request gets a `requestId` (from `X-Request-Id` or generated). Structured logs include this ID for tracing. **Audit log:** Mint, burn, blacklist, and seize calls are appended to an in-memory audit log (max 10,000 entries); it is not persisted to disk and is cleared on restart. Use `GET /audit` or `GET /audit/export` to read; for production, rely on stdout logs or add persistence.
+
 ## Docker
 
 From repo root:

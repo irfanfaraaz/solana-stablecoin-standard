@@ -154,13 +154,11 @@ app.use((req: Request, _res, next) => {
   next();
 });
 
-app.get("/health", (_req: Request, res: Response) => {
+app.get("/health", async (_req: Request, res: Response) => {
   try {
     const connection = new Connection(RPC_URL);
-    connection.getSlot().then(
-      () => res.status(200).json({ ok: true, rpc: RPC_URL }),
-      (err) => res.status(503).json({ ok: false, error: String(err) }),
-    );
+    await connection.getSlot();
+    res.status(200).json({ ok: true, rpc: RPC_URL });
   } catch (e) {
     res.status(503).json({ ok: false, error: String(e) });
   }

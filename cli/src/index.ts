@@ -422,10 +422,46 @@ program
 
 program
   .command("audit-log")
-  .description("Audit log (use backend indexer / API; see docs/API.md)")
-  .option("--action <type>", "Filter by action type")
-  .action(async (opts) => {
-    output({ message: "Audit log requires backend indexer. See docs/API.md and backend README.", actionFilter: opts.action }, (program.opts() as any).json);
+  .description("Show audit log (from backend API when --backend-url is set)")
+  .option("--backend-url <url>", "Backend API base URL (e.g. http://localhost:3000)")
+  .option("--format <format>", "Export format when using backend: json or csv", "json")
+  .option("--action <type>", "Filter by action type (mint, burn, blacklist_add, etc.)")
+  .action(async (opts: { backendUrl?: string; format?: string; action?: string }) => {
+    const jsonOut = (program.opts() as any).json;
+    if (opts.backendUrl) {
+      const base = opts.backendUrl.replace(/\/$/, "");
+      const format = (opts.format || "json").toLowerCase();
+      const url = format === "csv" ? `${base}/audit/export?format=csv` : `${base}/audit`;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Backend returned ${res.status}: ${res.statusText}`);
+        if (format === "csv") {
+          const text = await res.text();
+          if (jsonOut) {
+            output({ raw: text }, true);
+          } else {
+            console.log(text);
+          }
+        } else {
+          const data = (await res.json()) as { events?: unknown[] };
+          let events = data.events ?? [];
+          if (opts.action) {
+            const action = opts.action.toLowerCase();
+            events = events.filter((e: unknown) => ((e as { event?: string }).event ?? "").toLowerCase() === action);
+          }
+          output({ events }, jsonOut);
+        }
+      } catch (e: any) {
+        const msg = e?.message ?? String(e);
+        output({ error: `Failed to fetch audit log: ${msg}` }, jsonOut);
+        process.exitCode = 1;
+      }
+    } else {
+      output(
+        { message: "Provide --backend-url to fetch audit log from the backend API (e.g. --backend-url http://localhost:3000). See docs/API.md and backend README." },
+        jsonOut
+      );
+    }
   });
 
 program.parse();

@@ -22,8 +22,46 @@ Use the workspace package or `file:../sdk` in your app.
 
 **Presets** (no name/symbol/uri/decimals; you supply those):
 
-- `SSS_1_PRESET`: `{ enablePermanentDelegate: false, enableTransferHook: false }`
-- `SSS_2_PRESET`: `{ enablePermanentDelegate: true, enableTransferHook: true }`
+- `SSS_1_PRESET` / `Presets.SSS_1`: `{ enablePermanentDelegate: false, enableTransferHook: false }`
+- `SSS_2_PRESET` / `Presets.SSS_2`: `{ enablePermanentDelegate: true, enableTransferHook: true }`
+- `SSS_3_PRESET` / `Presets.SSS_3`: confidential + allowlist (POC)
+
+**Quick start** (preset init + operations + compliance):
+
+```ts
+import { SolanaStablecoin, SSSComplianceModule, Presets } from "@stbr/sss-token";
+
+// Preset initialization
+const stable = await SolanaStablecoin.createFromConnection(connection, {
+  preset: "sss-2",
+  name: "My Stablecoin",
+  symbol: "MYUSD",
+  decimals: 6,
+  authority: adminKeypair,
+});
+
+// Or custom config
+const custom = await SolanaStablecoin.createFromConnection(connection, {
+  name: "Custom Stable",
+  symbol: "CUSD",
+  decimals: 6,
+  authority: adminKeypair,
+  config: {
+    name: "Custom Stable",
+    symbol: "CUSD",
+    uri: "https://example.com",
+    decimals: 6,
+    ...Presets.SSS_2,
+  },
+});
+
+// Operations
+await stable.mint(adminKeypair.publicKey, recipient, 1_000_000).then((tx) => tx.rpc());
+const compliance = new SSSComplianceModule(stable);
+await compliance.addToBlacklist(adminKeypair.publicKey, address, "Sanctions match").then((tx) => tx.rpc()); // SSS-2
+await compliance.seize(adminKeypair.publicKey, frozenAccount, treasury, amount).then((tx) => tx.rpc());     // SSS-2
+const supply = await stable.getTotalSupply();
+```
 
 **Full config** (for init):
 

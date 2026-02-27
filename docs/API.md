@@ -7,6 +7,11 @@ This document describes the **backend API** expected for Phase E (mint/burn serv
 - **Base URL:** Configurable (e.g. `http://localhost:3000`).
 - **Auth:** API key or JWT in header (e.g. `Authorization: Bearer <token>`); exact scheme TBD per deployment.
 
+## Request flow
+
+- Every request gets a **request ID**: from header `X-Request-Id` or an auto-generated UUID. Use it for tracing and support.
+- Request-scoped **logging** includes this ID; structured logs go to stdout (see backend README for log shape).
+
 ## Health
 
 | Method | Path      | Description                                                                     |
@@ -43,9 +48,12 @@ All should be logged for audit (see COMPLIANCE.md).
 
 | Method | Path            | Description                               | Query                                   |
 | ------ | --------------- | ----------------------------------------- | --------------------------------------- |
+| GET    | `/audit`        | In-memory audit events (same as export JSON, no download) | — |
 | GET    | `/audit/export` | Audit trail export (CSV or JSON download) | `format=csv` or `format=json` (default) |
 
-Response: CSV with headers `time,event,mint,signature,...` or JSON array. `Content-Disposition: attachment`.
+Response for `/audit` and `/audit/export` (JSON): array of `{ time, event, payload }`. CSV: headers `time,event,mint,signature,...`; `Content-Disposition: attachment`.
+
+**Audit log (in-memory):** The backend keeps an in-memory audit log of API-driven actions (mint, burn, blacklist_add, blacklist_remove, seize). Entries are capped at 10,000; oldest entries are dropped when full. **The log is not persisted to disk**—restarting the process clears it. For production, persist via your own logging/ingestion (e.g. stdout → log aggregator) or add a persistence layer.
 
 ## Indexer / events
 

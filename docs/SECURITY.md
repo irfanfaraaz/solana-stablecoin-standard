@@ -18,8 +18,8 @@
 
 ## Audit trail
 
-- On-chain: Config and role state are public. Blacklist state lives in transfer-hook PDAs.
-- Off-chain: Backend and indexers should log blacklist add/remove and seize with timestamp, authority, and tx signature (see [COMPLIANCE.md](COMPLIANCE.md)).
+- On-chain: Config and role state are public. Blacklist state lives in transfer-hook PDAs. **Blacklist “reason” is not stored on-chain**—only the fact that an address is blacklisted; reasons are off-chain only (e.g. backend audit log, logs, compliance system).
+- Off-chain: Backend and indexers should log blacklist add/remove and seize with timestamp, authority, and tx signature (see [COMPLIANCE.md](COMPLIANCE.md)). **Backend keypair:** The service uses a keypair for signing mint/burn/compliance; keep it in env (e.g. `KEYPAIR_JSON` base64) or a secrets vault, never in the repo or in plain config.
 
 ## Error codes (stablecoin program)
 

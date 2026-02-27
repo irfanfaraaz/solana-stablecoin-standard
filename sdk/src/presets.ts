@@ -31,3 +31,9 @@ export const SSS_3_PRESET: Omit<
   enableConfidentialTransfers: true,
   enableAllowlist: true,
 };
+
+export const Presets = {
+  SSS_1: SSS_1_PRESET,
+  SSS_2: SSS_2_PRESET,
+  SSS_3: SSS_3_PRESET,
+} as const;
