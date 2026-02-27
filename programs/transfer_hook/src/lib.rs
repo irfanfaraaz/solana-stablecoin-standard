@@ -1,7 +1,10 @@
 #![allow(clippy::result_large_err)]
+// Realloc deprecation originates from Anchor's #[program] macro; remove when Anchor uses resize().
+#![allow(deprecated)]
 #![allow(unexpected_cfgs)]
 
 use anchor_lang::prelude::*;
+#[allow(deprecated)] // Prefer solana_system_interface when Anchor exposes it; create_account works.
 use anchor_lang::solana_program::system_instruction;
 use anchor_spl::token_interface::Mint;
 use spl_tlv_account_resolution::account::ExtraAccountMeta;
@@ -140,8 +143,9 @@ pub mod transfer_hook {
     }
 }
 
-/// AllowlistEntry.is_allowed offset (8 discriminator + bump + wallet).
-const ALLOWLIST_IS_ALLOWED_OFFSET: usize = 8 + 1 + 32; // 41
+/// Byte offset of `is_allowed` in AllowlistEntry. Must match state::AllowlistEntry layout:
+/// 8 (discriminator) + 1 (bump) + 32 (wallet Pubkey) = 41.
+const ALLOWLIST_IS_ALLOWED_OFFSET: usize = 8 + 1 + 32;
 
 pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
     if accounts.len() < 8 {

@@ -37,6 +37,8 @@ pub struct BurnTokens<'info> {
 }
 
 pub fn handle_burn(ctx: Context<BurnTokens>, amount: u64) -> Result<()> {
+    require!(amount > 0, StablecoinError::InvalidAmount);
+
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_accounts = Burn {
         mint: ctx.accounts.mint.to_account_info(),

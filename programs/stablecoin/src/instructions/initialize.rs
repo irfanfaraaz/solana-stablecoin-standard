@@ -77,6 +77,11 @@ pub fn handle_initialize(
     enable_allowlist: bool,
     transfer_hook_program_id: Option<Pubkey>,
 ) -> Result<()> {
+    require!(
+        ctx.accounts.config.master_authority == Pubkey::default(),
+        StablecoinError::AlreadyInitialized
+    );
+
     let mut extension_types = vec![];
     if enable_permanent_delegate {
         extension_types.push(ExtensionType::PermanentDelegate);
@@ -90,6 +95,8 @@ pub fn handle_initialize(
 
     let mint_size = ExtensionType::try_calculate_account_len::<SplMint>(&extension_types)
         .map_err(|_| StablecoinError::MathOverflow)?;
+    require!(decimals <= 18, StablecoinError::InvalidDecimals);
+
     let rent = Rent::get()?;
     let lamports = rent.minimum_balance(mint_size);
 

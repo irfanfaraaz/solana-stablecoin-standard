@@ -1,4 +1,7 @@
+// Err variant is large due to Anchor error enum; boxing would add runtime cost for rare path.
 #![allow(clippy::result_large_err)]
+// Realloc deprecation originates from Anchor's #[program] macro; remove when Anchor uses resize().
+#![allow(deprecated)]
 #![allow(unexpected_cfgs)]
 use anchor_lang::prelude::*;
 

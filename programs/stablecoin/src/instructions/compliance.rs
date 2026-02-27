@@ -192,7 +192,13 @@ pub fn handle_thaw_account(ctx: Context<FreezeThaw>) -> Result<()> {
     Ok(())
 }
 
+/// Seize: permanent delegate transfers from frozen account to treasury via Token-2022
+/// transfer_checked. Account order must match the mint's extra-account-metas (validation PDA):
+/// from, mint, to, authority, extra_meta_list, stablecoin_program, source_blacklist, dest_blacklist,
+/// [config_allowlist, source_allowlist, dest_allowlist if enable_allowlist], transfer_hook_program.
 pub fn handle_seize(ctx: Context<Seize>, amount: u64) -> Result<()> {
+    require!(amount > 0, StablecoinError::InvalidAmount);
+
     let bump = ctx.accounts.config.bump;
     let mint_key = ctx.accounts.mint.key().clone();
     let mint_key = mint_key.as_ref();

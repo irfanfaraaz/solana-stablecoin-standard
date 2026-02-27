@@ -25,14 +25,17 @@
 
 | Code | Name | Description |
 |------|------|-------------|
-| 6000 | Unauthorized | Signer does not have the required role |
-| 6001 | ProgramPaused | Operations are paused |
-| 6002 | QuotaExceeded | Minter exceeded daily quota |
-| 6003 | MinterInactive | Minter is inactive |
-| 6004 | ComplianceNotEnabled | Compliance (transfer hook) not enabled for this mint |
-| 6005 | PermanentDelegateNotEnabled | Permanent delegate not enabled (e.g. for seize) |
-| 6006 | ConfidentialTransfersNotEnabled | Confidential transfers not enabled |
-| 6007 | MathOverflow | Arithmetic overflow |
+| 6000 | AlreadyInitialized | Config or roles already initialized for this mint |
+| 6001 | Unauthorized | Signer does not have the required role |
+| 6002 | ProgramPaused | Operations are paused |
+| 6003 | QuotaExceeded | Minter exceeded daily quota |
+| 6004 | MinterInactive | Minter is inactive |
+| 6005 | ComplianceNotEnabled | Compliance (transfer hook) not enabled for this mint |
+| 6006 | PermanentDelegateNotEnabled | Permanent delegate not enabled (e.g. for seize) |
+| 6007 | ConfidentialTransfersNotEnabled | Confidential transfers not enabled |
+| 6008 | MathOverflow | Arithmetic overflow |
+| 6009 | InvalidDecimals | Decimals must be between 0 and 18 |
+| 6010 | InvalidAmount | Amount must be greater than zero |
 
 ## Transfer hook program
 

@@ -38,6 +38,8 @@ pub struct MintTokens<'info> {
 }
 
 pub fn handle_mint(ctx: Context<MintTokens>, amount: u64) -> Result<()> {
+    require!(amount > 0, StablecoinError::InvalidAmount);
+
     let config = &mut ctx.accounts.minter_config;
     let current_time = Clock::get()?.unix_timestamp;
 

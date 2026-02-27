@@ -2,6 +2,8 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum StablecoinError {
+    #[msg("Config or roles already initialized for this mint")]
+    AlreadyInitialized,
     #[msg("Unauthorized access")]
     Unauthorized,
     #[msg("Stablecoin operations are globally paused")]
@@ -18,4 +20,8 @@ pub enum StablecoinError {
     ConfidentialTransfersNotEnabled,
     #[msg("Math Overflow")]
     MathOverflow,
+    #[msg("Decimals must be between 0 and 18")]
+    InvalidDecimals,
+    #[msg("Amount must be greater than zero")]
+    InvalidAmount,
 }
