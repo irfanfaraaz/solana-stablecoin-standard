@@ -7,10 +7,12 @@ skip-lint = false
 [programs.localnet]
 stablecoin = "3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM"
 transfer_hook = "4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi"
+oracle = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
 [programs.devnet]
 stablecoin = "3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM"
 transfer_hook = "4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi"
+oracle = "4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu"
 
 [registry]
 url = "https://api.apr.dev"

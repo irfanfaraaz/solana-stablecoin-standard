@@ -6,6 +6,7 @@ Reference implementation of the Solana Stablecoin Standard: a configurable Token
 
 - **Base program** (`stablecoin`): Initialize mint, config, roles; mint/burn, freeze/thaw, pause/unpause; minter management; optional blacklist and seize (SSS-2).
 - **Transfer hook program** (`transfer_hook`): Validates transfers against blacklist when compliance is enabled.
+- **Oracle program** (`oracle`): Computes mint / redeem amounts from Switchboard prices; separate pricing module (no CPI from stablecoin).
 - **TypeScript SDK** (`@stbr/sss-token`): Create/load stablecoins, operations, presets, compliance module.
 - **Admin CLI** (`sss-token`): Init, mint, burn, freeze, thaw, pause, blacklist, seize, status, supply, minters.
 - **Admin TUI** (`sss-tui`): Interactive terminal UI (Ink) for status, mint, burn, freeze/thaw, pause/unpause, blacklist, allowlist, seize.
@@ -82,6 +83,7 @@ Default RPC is **devnet** (`https://api.devnet.solana.com`). CLI, TUI, backend, 
 | ------------- | ---------------------------------------------- |
 | stablecoin    | `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM` |
 | transfer_hook | `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi` |
+| oracle        | `4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu` |
 
 For local tests run `anchor test` (starts a local validator). For devnet deployment proof and example tx links, see [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
@@ -114,7 +116,8 @@ See [SSS-1.md](docs/SSS-1.md), [SSS-2.md](docs/SSS-2.md), and [SSS-3.md](docs/SS
                           │
 ┌─────────────────────────▼──────────────────────────────────┐
 │  Stablecoin program (config, roles, mint, burn, freeze, …)    │
-│  + Transfer hook program (blacklist check on transfer)       │
+│  + Transfer hook program (blacklist / allowlist checks)      │
+│  + Oracle program (price-based mint / redeem helper)         │
 └─────────────────────────┬───────────────────────────────────┘
                           │
                     Token-2022 / SPL
@@ -122,6 +125,7 @@ See [SSS-1.md](docs/SSS-1.md), [SSS-2.md](docs/SSS-2.md), and [SSS-3.md](docs/SS
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Layer model, PDAs, security.
 - [SDK.md](docs/SDK.md) — SDK usage and examples.
+  - Includes `sdk/src/oracle.ts` helper for reading oracle return data.
 - [OPERATIONS.md](docs/OPERATIONS.md) — Operator runbook and CLI reference.
 - [COMPLIANCE.md](docs/COMPLIANCE.md) — Regulatory and audit considerations.
 - [API.md](docs/API.md) — Backend API reference.
@@ -144,7 +148,8 @@ Runs integration tests (SSS-1, SSS-2, and SSS-3 flows) and unit-style error case
 solana-stablecoin-standard/
 ├── programs/
 │   ├── stablecoin/          # Configurable stablecoin (SSS-1, SSS-2, SSS-3)
-│   └── transfer_hook/       # Blacklist + allowlist check on transfer (SSS-2, SSS-3)
+│   ├── transfer_hook/       # Blacklist + allowlist check on transfer (SSS-2, SSS-3)
+│   └── oracle/              # Oracle Integration Module (Switchboard-based pricing)
 ├── sdk/                     # @stbr/sss-token (presets, core, compliance, confidential)
 ├── cli/                     # sss-token admin CLI
 ├── admin-tui/               # SSS Admin TUI (Ink) — status, mint, burn, freeze, pause, blacklist, allowlist, seize
@@ -157,6 +162,7 @@ solana-stablecoin-standard/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── SDK.md
+│   ├── ORACLE.md
 │   ├── OPERATIONS.md
 │   ├── SSS-1.md, SSS-2.md, SSS-3.md
 │   ├── COMPLIANCE.md

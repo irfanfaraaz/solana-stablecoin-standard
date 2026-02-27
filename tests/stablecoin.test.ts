@@ -7,6 +7,7 @@ import { registerSSS3AllowlistSuite } from "./suites/sss3-allowlist";
 import { registerUnitErrorsSuite } from "./suites/unit-errors";
 import { registerUnitSuccessSuite } from "./suites/unit-success";
 import { registerSdkUnitSuite } from "./suites/sdk-unit";
+import { registerOracleSuite } from "./suites/oracle";
 
 describe("solana-stablecoin-standard", () => {
   const ctx = createTestContext();
@@ -40,4 +41,5 @@ describe("solana-stablecoin-standard", () => {
   registerUnitErrorsSuite(ctx);
   registerUnitSuccessSuite(ctx);
   registerSdkUnitSuite(ctx);
+  registerOracleSuite(ctx);
 });

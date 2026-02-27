@@ -9,9 +9,10 @@ Submission requirement: **Devnet deployment proof (Program ID + example transact
    In `Anchor.toml` add (or merge) a devnet section:
 
    ```toml
-   [programs.devnet]
-   stablecoin = "<STABLECOIN_PROGRAM_ID>"
-   transfer_hook = "<TRANSFER_HOOK_PROGRAM_ID>"
+[programs.devnet]
+stablecoin = "<STABLECOIN_PROGRAM_ID>"
+transfer_hook = "<TRANSFER_HOOK_PROGRAM_ID>"
+oracle = "<ORACLE_PROGRAM_ID>"   # optional bonus: oracle integration module
    ```
 
    Or use existing program keypairs; IDs are set at first deploy.
@@ -23,14 +24,21 @@ Submission requirement: **Devnet deployment proof (Program ID + example transact
    anchor deploy --provider.cluster devnet
    ```
 
-   This deploys both `stablecoin` and `transfer_hook`. Note the printed Program IDs.
+This deploys both `stablecoin` and `transfer_hook`. For the oracle module, you can either include it in the same deploy (if configured in `Anchor.toml`) or deploy just the oracle with:
+
+```bash
+anchor deploy -p oracle --provider.cluster devnet
+```
+
+In all cases, note the printed Program IDs.
 
 3. **Record Program IDs**
 
-   After deploy, record:
+After deploy, record:
 
-   - **Stablecoin program:** `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM`
-   - **Transfer hook program:** `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi`
+- **Stablecoin program:** `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM`
+- **Transfer hook program:** `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi`
+- **Oracle program (bonus):** `4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu`
 
    Set them in env (or in CLI/backend) when calling Devnet:
 
@@ -85,8 +93,10 @@ Run from repo root with Devnet RPC and keypair funded on Devnet.
 |------|--------|
 | Stablecoin program (Devnet) | `3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM` |
 | Transfer hook program (Devnet) | `4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi` |
+| Oracle program (Devnet, bonus) | `4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu` |
 | Deploy stablecoin | [2jM7NSwhE...grUptNjF](https://explorer.solana.com/tx/2jM7NSwhEh51VWj7BA8uhPV43JHHW2AEsWQRzuB7gZDCnEh9GEoinjMPcuXoqk4qXctko8PatnxBv1Q8grUptNjF?cluster=devnet) |
 | Deploy transfer_hook | [2XnnRFy1d...Y2R5CsZ](https://explorer.solana.com/tx/2XnnRFy1dVo1QWf6ZLN5Wsx44MHPUcAx9DyNVsz4N4SW1h9nvAJWAjPfmNUXuJPUsmYjHxc7ccQ3rtDSSY2R5CsZ?cluster=devnet) |
+| Deploy oracle | [3yq9kShUx...TkujRTP](https://explorer.solana.com/tx/3yq9kShUxjWdeJrdwTx3VX8Ub9wh7uK7Z4PAdr8pXt6bhCabsSEEmcyJ1TGLDkZfQXgrUbpyfvobYBi9nTkujRTP?cluster=devnet) |
 | Example: init tx (SSS-2 "Devnet Coin" / DCOIN) | [1p6QUvtRC...GzTRLAH](https://explorer.solana.com/tx/1p6QUvtRCjMT9ZD5R6fHqkjudvRMXYud31mFLjoXV54C27EE4oJpmivcgY9HWAcgBncKEYQdFzN2pyYpGzTRLAH?cluster=devnet) |
 | Example: add minter tx | [3He7Yksm9...gM3QFPP](https://explorer.solana.com/tx/3He7Yksm9wDCwNGncWn7Ripsi6sTzmFveSFBctj5TFtPohzYKtwkNP9hLBaGzBdDfa4SQdL9rZfCn9vr5gM3QFPP?cluster=devnet) |
 | Example: mint tx (1000 DCOIN) | [4cpXcSi4W...xb5CMky1](https://explorer.solana.com/tx/4cpXcSi4WuuPK9LXXpmn6b85MhKwDzJ8jBTnVtu5veHnoVkGhDiLRqAesZPEVBUFPaKMUuuapQevnveLxb5CMky1?cluster=devnet) |

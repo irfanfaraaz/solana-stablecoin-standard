@@ -7,6 +7,7 @@ import {
   Keypair,
   PublicKey,
 } from "@solana/web3.js";
+import * as web3 from "@solana/web3.js";
 import { getAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import {
@@ -21,6 +22,7 @@ import {
 const PROGRAM_IDS = {
   stablecoin: process.env.STABLECOIN_PROGRAM_ID || "3zFReCtrBsjMZNabaV4vJSaCHtTpFtApkWMjrr5gAeeM",
   transferHook: process.env.TRANSFER_HOOK_PROGRAM_ID || "4VKhzS8cyVXJPD9VpAopu4g16wzKA6YDm8Wr2TadR7qi",
+  oracle: process.env.ORACLE_PROGRAM_ID || "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS",
 };
 
 function loadKeypair(keypairPath: string): Keypair {
@@ -38,10 +40,12 @@ function getConnection(rpcUrl: string): Connection {
 function loadPrograms(connection: Connection, wallet: Wallet): {
   stablecoinProgram: Program<any>;
   transferHookProgram: Program<any> | null;
+  oracleProgram: Program<any> | null;
 } {
   const repoRoot = process.cwd();
   const stablecoinIdlPath = path.join(repoRoot, "target", "idl", "stablecoin.json");
   const transferHookIdlPath = path.join(repoRoot, "target", "idl", "transfer_hook.json");
+  const oracleIdlPath = path.join(repoRoot, "target", "idl", "oracle.json");
   if (!fs.existsSync(stablecoinIdlPath)) {
     throw new Error(`IDL not found at ${stablecoinIdlPath}. Run "anchor build" from repo root.`);
   }
@@ -50,12 +54,18 @@ function loadPrograms(connection: Connection, wallet: Wallet): {
   (stablecoinIdl as any).address = PROGRAM_IDS.stablecoin;
   const stablecoinProgram = new Program(stablecoinIdl, provider);
   let transferHookProgram: Program<any> | null = null;
+  let oracleProgram: Program<any> | null = null;
   if (fs.existsSync(transferHookIdlPath)) {
     const transferHookIdl = JSON.parse(fs.readFileSync(transferHookIdlPath, "utf-8"));
     (transferHookIdl as any).address = PROGRAM_IDS.transferHook;
     transferHookProgram = new Program(transferHookIdl, provider);
   }
-  return { stablecoinProgram, transferHookProgram };
+  if (fs.existsSync(oracleIdlPath)) {
+    const oracleIdl = JSON.parse(fs.readFileSync(oracleIdlPath, "utf-8"));
+    (oracleIdl as any).address = PROGRAM_IDS.oracle;
+    oracleProgram = new Program(oracleIdl, provider);
+  }
+  return { stablecoinProgram, transferHookProgram, oracleProgram };
 }
 
 function parseTomlConfig(configPath: string): Partial<StablecoinConfig> & { name: string; symbol: string; decimals: number; uri?: string } {
@@ -418,6 +428,20 @@ program
       }
     }
     output({ mint: opts.mint, holders, count: holders.length }, (program.opts() as any).json);
+  });
+
+program
+  .command("oracle")
+  .description("Oracle helpers (price-based mint/redeem, experimental)")
+  .requiredOption("--queue <address>", "Switchboard queue public key")
+  .action((_cmdOpts) => {
+    output(
+      {
+        message:
+          "Oracle helpers are available via the SDK (computeMintAmountFromOracle) and program IDL; see docs/ORACLE.md for full examples.",
+      },
+      (program.opts() as any).json,
+    );
   });
 
 program

@@ -143,6 +143,52 @@ compliance.removeFromBlacklist(blacklister, address);
 compliance.seize(seizer, fromAccount, treasury, amount);
 ```
 
+## Oracle helper (optional)
+
+For non-USD pegs (e.g. EUR, BRL, CPI-indexed), the repo includes a separate
+**Oracle Integration Module** (`oracle` program) that computes mint / redeem
+amounts from Switchboard prices. The core stablecoin program never CPI-calls
+this module; instead, **clients** call the oracle and then pass the computed
+amount into the existing `mint` / `burn` instructions.
+
+The SDK exposes a small helper in `sdk/src/oracle.ts`:
+
+```ts
+import type { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { SYSVAR_SLOT_HASHES_PUBKEY, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js";
+import { Program } from "@coral-xyz/anchor";
+import type { Oracle } from "../target/types/oracle";
+import { computeMintAmountFromOracle } from "@stbr/sss-token";
+
+// Example shape – you must construct Switchboard-specific instructions yourself.
+async function quoteMintAmountFromOracle(params: {
+  connection: Connection;
+  oracleProgram: Program<Oracle>;
+  queue: PublicKey;
+  pegAmount: bigint;      // e.g. 100_000_000n for 100.000000
+  tokenDecimals: number;  // e.g. 6
+  preInstructions: TransactionInstruction[]; // Switchboard update + Ed25519 verify
+}): Promise<bigint> {
+  const { connection, oracleProgram, queue, pegAmount, tokenDecimals, preInstructions } = params;
+
+  const amount = await computeMintAmountFromOracle({
+    connection,
+    program: oracleProgram,
+    queue,
+    slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
+    instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+    pegAmount,
+    tokenDecimals,
+    preInstructions,
+  });
+
+  return amount;
+}
+```
+
+See [ORACLE.md](./ORACLE.md) for full details on the oracle program, expected
+instruction ordering, and how to build the Switchboard pre-instructions.
+
 ## PDA helpers
 
 - `SolanaStablecoin.getMintPDA(symbol, programId)`
