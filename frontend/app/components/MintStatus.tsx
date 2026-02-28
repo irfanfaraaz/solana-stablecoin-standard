@@ -19,7 +19,7 @@ export function MintStatus({ mintAddress }: { mintAddress: string | null }) {
 
   if (!mintAddress) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Mint status</p>
         <p className="text-sm text-muted">
           Set <code className="font-mono">NEXT_PUBLIC_MINT_ADDRESS</code> or
@@ -32,7 +32,7 @@ export function MintStatus({ mintAddress }: { mintAddress: string | null }) {
   const isValidMintLength = mintAddress.length >= 32 && mintAddress.length <= 44;
   if (!isValidMintLength) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Mint status</p>
         <p className="text-sm text-muted">
           Enter a full mint address (32–44 characters) above to load config and supply.
@@ -43,7 +43,7 @@ export function MintStatus({ mintAddress }: { mintAddress: string | null }) {
 
   if (loading) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Mint status</p>
         <p className="text-sm text-muted">Loading…</p>
       </section>
@@ -52,7 +52,7 @@ export function MintStatus({ mintAddress }: { mintAddress: string | null }) {
 
   if (error) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Mint status</p>
         <p className="text-sm text-red-600">{error.message}</p>
         <p className="text-xs text-muted">
@@ -72,7 +72,7 @@ export function MintStatus({ mintAddress }: { mintAddress: string | null }) {
 
   if (!config) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Mint status</p>
         <p className="text-sm text-muted">No config (mint may not exist).</p>
       </section>
@@ -86,7 +86,7 @@ export function MintStatus({ mintAddress }: { mintAddress: string | null }) {
       : null;
 
   return (
-    <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+    <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <p className="text-lg font-semibold">Mint status</p>
         <button

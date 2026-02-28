@@ -277,6 +277,42 @@ program
     }, (program.opts() as any).json);
   });
 
+const rolesCmd = program
+  .command("roles")
+  .description("View or update role accounts (burner, pauser, blacklister, seizer)")
+  .requiredOption("-m, --mint <address>", "Mint address");
+
+rolesCmd
+  .command("update")
+  .description("Update one or more roles (master authority only). Omitted roles are unchanged. To revoke, set role to master pubkey.")
+  .option("--burner <pubkey>", "Set burner role to this pubkey")
+  .option("--pauser <pubkey>", "Set pauser role to this pubkey")
+  .option("--blacklister <pubkey>", "Set blacklister role to this pubkey")
+  .option("--seizer <pubkey>", "Set seizer role to this pubkey")
+  .action(async (opts: { burner?: string; pauser?: string; blacklister?: string; seizer?: string }, _cmd, cmd) => {
+    const parent = (cmd as Command)?.parent as Command | undefined;
+    const mint = parent?.opts?.()?.mint ?? (rolesCmd as any).opts?.()?.mint;
+    if (!mint) throw new Error("Mint required (-m, --mint)");
+    const keypair = loadKeypair((program.opts() as any).keypair);
+    const connection = getConnection((program.opts() as any).rpcUrl);
+    const wallet = new Wallet(keypair);
+    const { stablecoinProgram, transferHookProgram } = loadPrograms(connection, wallet);
+    const sdk = new SolanaStablecoin(stablecoinProgram as any, new PublicKey(mint), (transferHookProgram || undefined) as any);
+    const roles: { burner?: PublicKey | null; pauser?: PublicKey | null; blacklister?: PublicKey | null; seizer?: PublicKey | null } = {};
+    if (opts.burner != null) roles.burner = new PublicKey(opts.burner);
+    if (opts.pauser != null) roles.pauser = new PublicKey(opts.pauser);
+    if (opts.blacklister != null) roles.blacklister = new PublicKey(opts.blacklister);
+    if (opts.seizer != null) roles.seizer = new PublicKey(opts.seizer);
+    if (Object.keys(roles).length === 0) {
+      output({ error: "Provide at least one role: --burner, --pauser, --blacklister, or --seizer" }, (program.opts() as any).json);
+      process.exitCode = 1;
+      return;
+    }
+    const tx = await sdk.updateRoles(keypair.publicKey, roles);
+    const sig = await tx.rpc();
+    output({ signature: sig, updated: Object.keys(roles) }, (program.opts() as any).json);
+  });
+
 program
   .command("supply")
   .description("Show total supply")

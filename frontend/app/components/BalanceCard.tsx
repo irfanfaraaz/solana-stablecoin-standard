@@ -66,7 +66,7 @@ export function BalanceCard({ mintAddress }: { mintAddress: string | null }) {
 
   if (!session) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-6">
         <p className="text-lg font-semibold">Your balance</p>
         <p className="text-sm text-muted">Connect a wallet to see balance.</p>
       </section>
@@ -75,7 +75,7 @@ export function BalanceCard({ mintAddress }: { mintAddress: string | null }) {
 
   if (!mint) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-6">
         <p className="text-lg font-semibold">Your balance</p>
         <p className="text-sm text-muted">Set mint address to see balance.</p>
       </section>
@@ -84,7 +84,7 @@ export function BalanceCard({ mintAddress }: { mintAddress: string | null }) {
 
   if (!isValidMintLength) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-6">
         <p className="text-lg font-semibold">Your balance</p>
         <p className="text-sm text-muted">
           Enter a full mint address (32–44 characters) above to see balance.
@@ -94,12 +94,12 @@ export function BalanceCard({ mintAddress }: { mintAddress: string | null }) {
   }
 
   return (
-    <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6">
-      <p className="text-lg font-semibold">Your balance</p>
+    <section className="dashboard-card w-full max-w-3xl space-y-4 p-6">
+      <p className="text-lg font-semibold text-foreground">Your balance</p>
       {loading && <p className="text-sm text-muted">Loading…</p>}
       {error && !loading && <p className="text-sm text-red-600">{error}</p>}
       {!loading && balance != null && (
-        <p className="text-2xl font-semibold">{balance}</p>
+        <p className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{balance}</p>
       )}
     </section>
   );

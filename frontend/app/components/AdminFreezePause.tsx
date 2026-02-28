@@ -63,7 +63,7 @@ export function AdminFreezePause() {
 
   if (!session) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Freeze / Pause</p>
         <p className="text-sm text-muted">Connect a wallet (pauser/freezer role) to freeze, thaw, or pause.</p>
       </div>
@@ -72,7 +72,7 @@ export function AdminFreezePause() {
 
   if (!mintValid) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Freeze / Pause</p>
         <p className="text-sm text-muted">Set a mint address to use freeze/thaw/pause.</p>
       </div>
@@ -81,7 +81,7 @@ export function AdminFreezePause() {
 
   if (sdkLoading || !sdk) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Freeze / Pause</p>
         <p className="text-sm text-muted">Loading…</p>
       </div>
@@ -89,7 +89,7 @@ export function AdminFreezePause() {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+    <div className="dashboard-card space-y-4 p-4 sm:p-6">
       <p className="font-semibold">Freeze / Pause</p>
       <p className="text-sm text-muted">Freeze or thaw a token account; pause or unpause the mint.</p>
       <form onSubmit={(e) => { e.preventDefault(); }} className="space-y-3">

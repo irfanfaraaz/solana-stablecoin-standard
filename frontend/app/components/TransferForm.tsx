@@ -63,7 +63,7 @@ export function TransferForm({ mintAddress }: { mintAddress: string | null }) {
 
   if (!mint) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Transfer</p>
         <p className="text-sm text-muted">Set mint address to enable transfers.</p>
       </section>
@@ -72,7 +72,7 @@ export function TransferForm({ mintAddress }: { mintAddress: string | null }) {
 
   if (!isValidMintLength) {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Transfer</p>
         <p className="text-sm text-muted">
           Enter a full mint address (32–44 characters) above to enable transfers.
@@ -83,7 +83,7 @@ export function TransferForm({ mintAddress }: { mintAddress: string | null }) {
 
   if (tokenStatus === "disconnected") {
     return (
-      <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
         <p className="text-lg font-semibold">Transfer</p>
         <p className="text-sm text-muted">Connect a wallet to transfer.</p>
       </section>
@@ -91,7 +91,7 @@ export function TransferForm({ mintAddress }: { mintAddress: string | null }) {
   }
 
   return (
-    <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+    <section className="dashboard-card w-full max-w-3xl space-y-4 p-4 sm:p-6">
       <p className="text-lg font-semibold">Transfer</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

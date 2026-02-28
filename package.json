@@ -11,7 +11,7 @@
         "tui": "node admin-tui/dist/index.js",
         "frontend:dev": "yarn workspace frontend dev",
         "frontend:build": "yarn workspace frontend build",
-        "copy-idl": "mkdir -p frontend/public/idl && cp target/idl/stablecoin.json target/idl/transfer_hook.json frontend/public/idl/ 2>/dev/null || true"
+        "copy-idl": "mkdir -p frontend/public/idl && cp target/idl/stablecoin.json target/idl/transfer_hook.json target/idl/oracle.json frontend/public/idl/ 2>/dev/null || true"
     },
     "workspaces": [
         "sdk",

@@ -159,10 +159,13 @@ export function AdminMintBurn() {
   const handleBurn = useApi ? handleBurnApi : handleBurnSdk;
   const busy = loading || isSending;
   const err = apiError ?? (error != null ? getTransactionErrorMessage(error) : null);
+  const getLoading = (): "mint" | "burn" | null => loading;
+  const showMintLoading = getLoading() === "mint" || (isSending && getLoading() === "mint");
+  const showBurnLoading = getLoading() === "burn" || (isSending && getLoading() === "burn");
 
   if (!mintValid) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Mint / Burn</p>
         <p className="text-sm text-muted">Set a mint address above to use mint/burn.</p>
       </div>
@@ -171,7 +174,7 @@ export function AdminMintBurn() {
 
   if (!useApi && (sdkLoading || !sdk)) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Mint / Burn</p>
         <p className="text-sm text-muted">Loading… Connect a wallet to mint/burn via SDK.</p>
       </div>
@@ -180,7 +183,7 @@ export function AdminMintBurn() {
 
   if (!useApi && !session) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Mint / Burn</p>
         <p className="text-sm text-muted">Connect a wallet to mint or burn (SDK).</p>
       </div>
@@ -188,7 +191,7 @@ export function AdminMintBurn() {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+    <div className="dashboard-card space-y-4 p-4 sm:p-6">
       <p className="font-semibold">Mint / Burn</p>
       <p className="text-sm text-muted">
         {useApi
@@ -224,7 +227,7 @@ export function AdminMintBurn() {
           disabled={!!busy || !mintRecipient.trim() || !mintAmount.trim()}
           className="min-h-[44px] cursor-pointer rounded-lg border border-border-low bg-cream px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading === "mint" || (isSending && loading === "mint") ? "Minting…" : "Mint"}
+          {showMintLoading ? "Minting…" : "Mint"}
         </button>
       </form>
       <form onSubmit={handleBurn} className="space-y-3 border-t border-border-low pt-4">
@@ -256,7 +259,7 @@ export function AdminMintBurn() {
           disabled={!!busy || !burnAmount.trim()}
           className="min-h-[44px] cursor-pointer rounded-lg border border-border-low bg-cream px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading === "burn" || (isSending && loading === "burn") ? "Burning…" : "Burn"}
+          {showBurnLoading ? "Burning…" : "Burn"}
         </button>
       </form>
       {err && <p className="text-sm text-red-600">{err}</p>}

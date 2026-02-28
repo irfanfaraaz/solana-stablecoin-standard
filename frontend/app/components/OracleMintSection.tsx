@@ -9,12 +9,12 @@ import {
   createAssociatedTokenAccountInstruction,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { useMint } from "../../context/mint-context";
-import { useStablecoinSdk } from "../../lib/use-stablecoin-sdk";
-import { web3InstructionToKitFormat, builderToInstruction } from "../../lib/instruction-to-kit";
-import { getTransactionErrorMessage } from "../../lib/transaction-error";
-import { RPC_URL } from "../../lib/constants";
-import { ORACLE_PROGRAM_ID, SWITCHBOARD_QUEUE, SWITCHBOARD_FEED_HASH } from "../../lib/constants";
+import { useMint } from "../context/mint-context";
+import { useStablecoinSdk } from "../lib/use-stablecoin-sdk";
+import { web3InstructionToKitFormat, builderToInstruction } from "../lib/instruction-to-kit";
+import { getTransactionErrorMessage } from "../lib/transaction-error";
+import { RPC_URL } from "../lib/constants";
+import { ORACLE_PROGRAM_ID, SWITCHBOARD_QUEUE, SWITCHBOARD_FEED_HASH } from "../lib/constants";
 
 /**
  * Mint with oracle — user pays Switchboard quote (~0.00015 SOL) + tx fees.
@@ -96,7 +96,7 @@ export function OracleMintSection() {
       const { computeMintAmountFromOracle } = await import("@stbr/sss-token");
       const tokenAmount = await computeMintAmountFromOracle({
         connection,
-        program: oracleProgram,
+        program: oracleProgram as any,
         queue: queuePubkey,
         slotHashes,
         instructionsSysvar,
@@ -134,7 +134,7 @@ export function OracleMintSection() {
 
   if (!mintValid) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Mint with oracle</p>
         <p className="text-sm text-muted">Set a mint address above to use oracle-based mint.</p>
       </div>
@@ -143,7 +143,7 @@ export function OracleMintSection() {
 
   if (sdkLoading || !sdk) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Mint with oracle</p>
         <p className="text-sm text-muted">Loading… Connect a wallet and set queue/feed in env.</p>
       </div>
@@ -152,7 +152,7 @@ export function OracleMintSection() {
 
   if (!session) {
     return (
-      <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+      <div className="dashboard-card space-y-4 p-4 sm:p-6">
         <p className="font-semibold">Mint with oracle</p>
         <p className="text-sm text-muted">Connect a wallet. You pay Switchboard quote (~0.00015 SOL) + tx fees.</p>
       </div>
@@ -160,7 +160,7 @@ export function OracleMintSection() {
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border-low bg-card p-4 sm:p-6">
+    <div className="dashboard-card space-y-4 p-4 sm:p-6">
       <p className="font-semibold">Mint with oracle</p>
       <p className="text-sm text-muted">
         Enter peg amount (e.g. 100 for 100 EUR), decimals, and recipient. Uses live price from Switchboard; you sign one tx and pay fees.

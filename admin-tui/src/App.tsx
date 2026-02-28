@@ -14,6 +14,7 @@ import { BlacklistScreen } from "./screens/BlacklistScreen.js";
 import { AllowlistScreen } from "./screens/AllowlistScreen.js";
 import { SeizeScreen } from "./screens/SeizeScreen.js";
 import { SetMintScreen } from "./screens/SetMintScreen.js";
+import { RolesScreen } from "./screens/RolesScreen.js";
 import { TransactionStatus } from "./components/TransactionStatus.js";
 
 function ScreenRouter({ screen }: { screen: string }) {
@@ -24,6 +25,8 @@ function ScreenRouter({ screen }: { screen: string }) {
       return <SetMintScreen />;
     case "status":
       return <StatusScreen />;
+    case "roles":
+      return <RolesScreen />;
     case "mint":
       return <MintScreen />;
     case "burn":

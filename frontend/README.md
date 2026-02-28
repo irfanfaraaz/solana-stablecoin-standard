@@ -4,7 +4,7 @@ Simple UI using the **@stbr/sss-token** SDK for stablecoin creation and manageme
 
 ## Features
 
-- **Tabbed layout:** Overview (wallet, status, balance, transfer), Create, Compliance, Admin, Audit.
+- **Dashboard routing:** Root `/` redirects to `/dashboard`. File-based routes: Overview (`/dashboard`), Create (`/dashboard/create`), Compliance (`/dashboard/compliance`), Admin (`/dashboard/admin`), Audit (`/dashboard/audit`), Confidential (`/dashboard/confidential`). Sidebar layout with mint selector, wallet, and nav; active state and empty states (e.g. “Select a stablecoin” on Overview when no mint is chosen).
 - **Wallet:** Connect via Wallet Standard (Phantom, etc.) using `@solana/react-hooks`.
 - **Mint picker:** Header chip opens a directory modal; stablecoins from **GET `/api/getmints`** (server-side getProgramAccounts). Set mint to drive status, balance, and actions.
 - **Create stablecoin:** SSS-1, SSS-2, or SSS-3 (confidential + allowlist) via SDK.
@@ -13,6 +13,7 @@ Simple UI using the **@stbr/sss-token** SDK for stablecoin creation and manageme
 - **Transfer:** Send tokens; optional screening when `NEXT_PUBLIC_BACKEND_URL` is set.
 - **Screening:** Check address against mint (backend `/screen`) when backend URL is set.
 - **Compliance:** Blacklist, Allowlist (SSS-3), Seize via SDK. Banner when wallet has no blacklister/seizer role.
+- **Confidential (SSS-3):** Deposit to confidential (allowlist-gated); other actions (configure, apply pending, transfer, withdraw) documented as proof-required.
 - **Admin:** Configure minter (master authority), Mint/Burn (backend or SDK), Freeze/Thaw, Pause/Unpause. Banner when wallet is not master authority (with role hints if pauser/burner/etc.).
 - **Audit & events:** Audit log export; indexed events when backend URL set.
 - **Toast:** Success toast with Solscan devnet link after transactions.

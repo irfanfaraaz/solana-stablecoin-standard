@@ -8,6 +8,7 @@ export type Screen =
   | "main"
   | "set_mint"
   | "status"
+  | "roles"
   | "mint"
   | "burn"
   | "freeze"

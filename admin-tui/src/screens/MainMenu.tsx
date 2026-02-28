@@ -6,6 +6,7 @@ import type { Screen } from "../state/AppState.js";
 import { SectionHeader } from "../components/SectionHeader.js";
 import { KeyValueRow } from "../components/KeyValueRow.js";
 import { Footer } from "../components/Footer.js";
+import { theme } from "../theme.js";
 
 interface Item {
   label: string;
@@ -15,6 +16,7 @@ interface Item {
 const MAIN_ITEMS: Item[] = [
   { label: "Set / change mint", value: "set_mint" },
   { label: "Status (config, supply, pause)", value: "status" },
+  { label: "Roles (assign / revoke)", value: "roles" },
   { label: "Mint tokens", value: "mint" },
   { label: "Burn tokens", value: "burn" },
   { label: "Freeze account", value: "freeze" },
@@ -30,7 +32,7 @@ const MAIN_ITEMS: Item[] = [
 function shortUrl(url: string): string {
   try {
     const u = url.replace(/^https?:\/\//, "").split("/")[0];
-    return u.length > 24 ? u.slice(0, 12) + "…" : u;
+    return u.length > 20 ? u.slice(0, 18) + "…" : u;
   } catch {
     return url.slice(0, 12) + "…";
   }
@@ -57,15 +59,20 @@ export function MainMenu() {
   return (
     <Box flexDirection="column">
       <Box marginBottom={1}>
-        <Text bold color="cyan">
+        <Text bold color={theme.brandBright}>
           ╭─ SSS Admin ─╮
         </Text>
       </Box>
       <SectionHeader title="CONTEXT" />
-      <Box marginY={1}>
+      <Box marginY={1} flexDirection="column" gap={1}>
         <KeyValueRow label="RPC" value={rpcShort} dimValue />
         <KeyValueRow label="Keypair" value={keypairShort} dimValue />
-        <KeyValueRow label="Mint" value={mintShort} dimValue />
+        <KeyValueRow
+          label="Mint"
+          value={mintShort}
+          dimValue={!!state.mintAddress}
+          valueColor={!state.mintAddress ? "warning" : undefined}
+        />
       </Box>
       <SectionHeader title="ACTIONS" />
       <Box marginTop={1}>

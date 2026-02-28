@@ -1,0 +1,159 @@
+{
+  "address": "4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu",
+  "metadata": {
+    "name": "oracle",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "SSS Oracle Integration Module — Switchboard price feeds for mint/redeem pricing"
+  },
+  "instructions": [
+    {
+      "name": "compute_mint_amount",
+      "docs": [
+        "Compute token amount to mint for a given peg amount (e.g. 100 EUR).",
+        "Returns amount via set_return_data (u64 little-endian)."
+      ],
+      "discriminator": [
+        152,
+        243,
+        105,
+        14,
+        254,
+        19,
+        229,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "queue",
+          "docs": [
+            "Switchboard queue (required for verification)"
+          ]
+        },
+        {
+          "name": "slot_hashes",
+          "docs": [
+            "SlotHashes sysvar (client passes sysvar account)"
+          ]
+        },
+        {
+          "name": "instructions",
+          "docs": [
+            "Instructions sysvar (client passes sysvar account; Ed25519 instruction at index 1)"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "peg_amount",
+          "type": "u64"
+        },
+        {
+          "name": "token_decimals",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "compute_redeem_amount",
+      "docs": [
+        "Compute token amount to redeem (burn) for a given peg amount.",
+        "Returns amount via set_return_data (u64 little-endian)."
+      ],
+      "discriminator": [
+        202,
+        135,
+        172,
+        13,
+        65,
+        63,
+        168,
+        115
+      ],
+      "accounts": [
+        {
+          "name": "queue",
+          "docs": [
+            "Switchboard queue (required for verification)"
+          ]
+        },
+        {
+          "name": "slot_hashes",
+          "docs": [
+            "SlotHashes sysvar (client passes sysvar account)"
+          ]
+        },
+        {
+          "name": "instructions",
+          "docs": [
+            "Instructions sysvar (client passes sysvar account; Ed25519 instruction at index 1)"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "peg_amount",
+          "type": "u64"
+        },
+        {
+          "name": "token_decimals",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "read_feed",
+      "docs": [
+        "Read verified price from Switchboard (Ed25519 instruction at index 1 in same tx)."
+      ],
+      "discriminator": [
+        135,
+        59,
+        222,
+        85,
+        226,
+        56,
+        184,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "queue",
+          "docs": [
+            "Switchboard queue (required for verification)"
+          ]
+        },
+        {
+          "name": "slot_hashes",
+          "docs": [
+            "SlotHashes sysvar (client passes sysvar account)"
+          ]
+        },
+        {
+          "name": "instructions",
+          "docs": [
+            "Instructions sysvar (client passes sysvar account; Ed25519 instruction at index 1)"
+          ]
+        }
+      ],
+      "args": []
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidFeed",
+      "msg": "No feed or invalid quote"
+    },
+    {
+      "code": 6001,
+      "name": "ZeroPrice",
+      "msg": "Price must be greater than zero"
+    },
+    {
+      "code": 6002,
+      "name": "Overflow",
+      "msg": "Numeric overflow"
+    }
+  ]
+}

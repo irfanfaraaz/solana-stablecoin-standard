@@ -150,6 +150,7 @@ Assume `sdk` is a `SolanaStablecoin` with `mintAddress` set.
 - **Freeze / Thaw:** `sdk.freeze(pauser, accountToFreeze)`, `sdk.thaw(pauser, accountToThaw)`.
 - **Pause / Unpause:** `sdk.pause(pauser)`, `sdk.unpause(pauser)`.
 - **Update minter:** `sdk.updateMinter(authority, minterPubkey, active, dailyQuota)`.
+- **Update roles:** `sdk.updateRoles(authority, { burner?, pauser?, blacklister?, seizer? })` — pass a `PublicKey` for each role you want to set; omit or pass `null` to leave unchanged. To revoke a role, set it to the master authority pubkey.
 
 ## View methods
 

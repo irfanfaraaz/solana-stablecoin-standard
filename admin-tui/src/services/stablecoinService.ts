@@ -30,6 +30,15 @@ export interface StablecoinService {
     toTreasury: PublicKey,
     amount: string
   ): Promise<{ signature: string }>;
+  updateRoles(
+    authority: PublicKey,
+    roles: {
+      burner?: PublicKey | null;
+      pauser?: PublicKey | null;
+      blacklister?: PublicKey | null;
+      seizer?: PublicKey | null;
+    }
+  ): Promise<{ signature: string }>;
 }
 
 export function createStablecoinService(
@@ -92,6 +101,11 @@ export function createStablecoinService(
     async seize(authority, from, toTreasury, amount) {
       if (!compliance) throw new Error("Transfer hook not configured (SSS-2)");
       const tx = await compliance.seize(authority, from, toTreasury, amount);
+      const sig = await tx.rpc();
+      return { signature: sig };
+    },
+    async updateRoles(authority, roles) {
+      const tx = await sdk.updateRoles(authority, roles);
       const sig = await tx.rpc();
       return { signature: sig };
     },

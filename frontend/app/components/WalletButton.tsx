@@ -9,7 +9,7 @@ export function WalletButton() {
   const address = wallet?.account.address.toString();
 
   return (
-    <section className="w-full max-w-3xl space-y-4 rounded-2xl border border-border-low bg-card p-6 shadow-[0_20px_80px_-50px_rgba(0,0,0,0.35)]">
+    <section className="dashboard-card w-full max-w-3xl space-y-4 p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-lg font-semibold">Wallet</p>
@@ -17,7 +17,7 @@ export function WalletButton() {
             Connect a wallet to view balance and transfer stablecoin.
           </p>
         </div>
-        <span className="rounded-full bg-cream px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground/80">
+        <span className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${status === "connected" ? "bg-primary/15 text-primary border border-primary/20" : "bg-cream text-muted"}`}>
           {status === "connected" ? "Connected" : "Not connected"}
         </span>
       </div>
@@ -28,7 +28,7 @@ export function WalletButton() {
             key={connector.id}
             onClick={() => connect(connector.id)}
             disabled={status === "connecting"}
-            className="group flex items-center justify-between rounded-xl border border-border-low bg-card px-4 py-3 text-left text-sm font-medium transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            className="group flex items-center justify-between rounded-xl border border-border-low bg-cream/50 px-4 py-3 text-left text-sm font-medium transition-all duration-200 hover:border-primary/30 hover:shadow-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="flex flex-col">
               <span className="text-base">{connector.name}</span>
@@ -56,7 +56,7 @@ export function WalletButton() {
         <button
           onClick={() => disconnect()}
           disabled={status !== "connected"}
-          className="inline-flex items-center gap-2 rounded-lg border border-border-low bg-card px-3 py-2 font-medium transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl border border-border-low bg-card px-3 py-2 font-medium transition-all duration-200 hover:border-primary/30 hover:shadow cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
         >
           Disconnect
         </button>

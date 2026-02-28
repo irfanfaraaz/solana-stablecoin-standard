@@ -6,6 +6,8 @@ import type {
   RoleAccountData,
 } from "@stbr/sss-token";
 import { Footer } from "../components/Footer.js";
+import { KeyValueRow } from "../components/KeyValueRow.js";
+import { theme } from "../theme.js";
 
 export function StatusScreen() {
   const { state } = useApp();
@@ -70,22 +72,35 @@ export function StatusScreen() {
     );
   }
 
+  const shortAddr = (pk: { toBase58(): string }): string => {
+    const s = pk.toBase58();
+    return s.length > 20 ? s.slice(0, 8) + "…" + s.slice(-8) : s;
+  };
+
   return (
-    <Box flexDirection="column">
-      <Text bold>Status</Text>
-      <Text dimColor>q/Esc: main menu · r: refresh</Text>
-      <Text>Mint: {state.mintAddress!.toBase58()}</Text>
-      <Text>Decimals: {config.decimals}</Text>
-      <Text>Paused: {config.isPaused ? "Yes" : "No"}</Text>
-      <Text>Supply: {supply ?? "—"}</Text>
-      <Text>Master: {config.masterAuthority.toBase58().slice(0, 12)}…</Text>
+    <Box flexDirection="column" gap={0}>
+      <Box marginBottom={1} flexDirection="column" gap={0}>
+        <Text bold color={theme.brand}>Status</Text>
+        <Text color={theme.muted} dimColor>q/Esc: main menu · r: refresh</Text>
+      </Box>
+      <Box flexDirection="column" gap={1}>
+        <KeyValueRow label="Mint" value={shortAddr(state.mintAddress!)} dimValue />
+        <KeyValueRow label="Decimals" value={String(config.decimals)} />
+        <KeyValueRow
+          label="Paused"
+          value={config.isPaused ? "Yes" : "No"}
+          valueColor={config.isPaused ? "error" : "success"}
+        />
+        <KeyValueRow label="Supply" value={supply ?? "—"} valueColor="success" />
+        <KeyValueRow label="Master" value={shortAddr(config.masterAuthority)} dimValue />
+      </Box>
       {roles && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text bold>Roles</Text>
-          <Text>Burner: {roles.burner.toBase58().slice(0, 12)}…</Text>
-          <Text>Pauser: {roles.pauser.toBase58().slice(0, 12)}…</Text>
-          <Text>Blacklister: {roles.blacklister.toBase58().slice(0, 12)}…</Text>
-          <Text>Seizer: {roles.seizer.toBase58().slice(0, 12)}…</Text>
+        <Box flexDirection="column" marginTop={1} gap={1}>
+          <Text bold color={theme.accent}>Roles</Text>
+          <KeyValueRow label="Burner" value={shortAddr(roles.burner)} dimValue />
+          <KeyValueRow label="Pauser" value={shortAddr(roles.pauser)} dimValue />
+          <KeyValueRow label="Blacklister" value={shortAddr(roles.blacklister)} dimValue />
+          <KeyValueRow label="Seizer" value={shortAddr(roles.seizer)} dimValue />
         </Box>
       )}
       <Box marginTop={1}>
