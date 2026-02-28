@@ -65,12 +65,14 @@ export class SSS3ConfidentialModule {
     tokenAccount?: PublicKey,
     extraAccounts: AccountMeta[] = []
   ): TransactionInstruction {
-    const token = tokenAccount ?? getAssociatedTokenAddressSync(
-      this.mint,
-      owner,
-      true,
-      this.tokenProgramId
-    );
+    const token =
+      tokenAccount ??
+      getAssociatedTokenAddressSync(
+        this.mint,
+        owner,
+        true,
+        this.tokenProgramId
+      );
     const keys: AccountMeta[] = [
       { pubkey: token, isSigner: false, isWritable: true },
       { pubkey: this.mint, isSigner: false, isWritable: false },
@@ -110,19 +112,25 @@ export class SSS3ConfidentialModule {
           allowlistPda
         );
         if (!entry?.isAllowed) {
-          throw new Error("SSS-3: wallet is not on allowlist; cannot fund confidential");
+          throw new Error(
+            "SSS-3: wallet is not on allowlist; cannot fund confidential"
+          );
         }
       } catch {
-        throw new Error("SSS-3: wallet is not on allowlist; cannot fund confidential");
+        throw new Error(
+          "SSS-3: wallet is not on allowlist; cannot fund confidential"
+        );
       }
     }
 
-    const token = tokenAccount ?? getAssociatedTokenAddressSync(
-      this.mint,
-      owner,
-      true,
-      this.tokenProgramId
-    );
+    const token =
+      tokenAccount ??
+      getAssociatedTokenAddressSync(
+        this.mint,
+        owner,
+        true,
+        this.tokenProgramId
+      );
     const amountNum = typeof amount === "bigint" ? Number(amount) : amount;
     const dataRest = Buffer.alloc(9);
     dataRest.writeBigUInt64LE(BigInt(amountNum), 0);
@@ -151,12 +159,14 @@ export class SSS3ConfidentialModule {
     instructionData: Uint8Array,
     tokenAccount?: PublicKey
   ): TransactionInstruction {
-    const token = tokenAccount ?? getAssociatedTokenAddressSync(
-      this.mint,
-      owner,
-      true,
-      this.tokenProgramId
-    );
+    const token =
+      tokenAccount ??
+      getAssociatedTokenAddressSync(
+        this.mint,
+        owner,
+        true,
+        this.tokenProgramId
+      );
     const data = buildConfidentialInstructionData(
       ConfidentialTransferInstruction.ApplyPendingBalance,
       instructionData
@@ -223,12 +233,14 @@ export class SSS3ConfidentialModule {
     extraAccounts: AccountMeta[] = [],
     tokenAccount?: PublicKey
   ): TransactionInstruction {
-    const token = tokenAccount ?? getAssociatedTokenAddressSync(
-      this.mint,
-      owner,
-      true,
-      this.tokenProgramId
-    );
+    const token =
+      tokenAccount ??
+      getAssociatedTokenAddressSync(
+        this.mint,
+        owner,
+        true,
+        this.tokenProgramId
+      );
     const keys: AccountMeta[] = [
       { pubkey: token, isSigner: false, isWritable: true },
       { pubkey: this.mint, isSigner: false, isWritable: false },
@@ -246,4 +258,3 @@ export class SSS3ConfidentialModule {
     });
   }
 }
-

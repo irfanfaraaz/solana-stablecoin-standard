@@ -1,0 +1,53 @@
+# Optional: Run Trident fuzz on a schedule (e.g. weekly).
+# The main CI also runs fuzz on push/PR with continue-on-error.
+# This workflow runs fuzz only, with a 5-min timeout for deeper coverage.
+name: Fuzz (Scheduled)
+
+on:
+  schedule:
+    - cron: "0 6 * * 0"  # Sundays at 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    name: Trident Fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: true
+
+      - name: Install Solana
+        run: |
+          sh -c "$(curl -sSfL https://release.solana.com/v2.1.0/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          solana --version
+
+      - name: Install Anchor
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          avm install 0.31.1
+          avm use 0.31.1
+          anchor --version
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Anchor build
+        run: anchor build
+
+      - name: Run Trident fuzz
+        run: cargo run -p trident-tests --bin fuzz_0
+        timeout-minutes: 5

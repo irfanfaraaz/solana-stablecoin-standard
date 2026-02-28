@@ -32,7 +32,7 @@ export function createTestContext(): TestContext {
   const sss2Sdk = new SolanaStablecoin(
     stablecoinProgram as any,
     undefined,
-    transferHookProgram as any,
+    transferHookProgram as any
   );
   const complianceSdk = new SSSComplianceModule(sss2Sdk);
   return {

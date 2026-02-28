@@ -96,5 +96,14 @@ export function useStablecoinSdk(
     load();
   }, [load]);
 
-  return { sdk, config, roles, totalSupply, oracleProgram, loading, error, refresh: load };
+  return {
+    sdk,
+    config,
+    roles,
+    totalSupply,
+    oracleProgram,
+    loading,
+    error,
+    refresh: load,
+  };
 }

@@ -65,7 +65,9 @@ export function getTransactionErrorMessage(error: unknown): string {
     const res = p.result ?? p.transactionPlanResult;
     if (res != null && typeof res === "object") {
       const r = res as Record<string, unknown>;
-      const innerData = (r.data ?? (r.error as Record<string, unknown>)?.data ?? r) as Record<string, unknown> | undefined;
+      const innerData = (r.data ??
+        (r.error as Record<string, unknown>)?.data ??
+        r) as Record<string, unknown> | undefined;
       if (innerData != null && typeof innerData === "object") {
         const id = innerData as Record<string, unknown>;
         if (Array.isArray(id.logs)) {
@@ -91,7 +93,8 @@ export function getTransactionErrorMessage(error: unknown): string {
   const cause = err.cause;
   if (cause != null && typeof cause === "object") {
     const c = cause as Record<string, unknown>;
-    const causeData = c.data ?? (c.error as Record<string, unknown> | undefined)?.data;
+    const causeData =
+      c.data ?? (c.error as Record<string, unknown> | undefined)?.data;
     if (causeData != null && typeof causeData === "object") {
       const cd = causeData as Record<string, unknown>;
       if (Array.isArray(cd.logs)) {
@@ -117,10 +120,17 @@ export function getTransactionErrorMessage(error: unknown): string {
   }
 
   // Top-level message might be generic; try cause's message for "custom program error" or logs
-  if (typeof msg === "string" && (msg === "Transaction simulation failed" || msg.startsWith("Transaction simulation failed"))) {
-    const causeMsg = cause != null && typeof cause === "object" && typeof (cause as Record<string, unknown>).message === "string"
-      ? (cause as Record<string, unknown>).message as string
-      : null;
+  if (
+    typeof msg === "string" &&
+    (msg === "Transaction simulation failed" ||
+      msg.startsWith("Transaction simulation failed"))
+  ) {
+    const causeMsg =
+      cause != null &&
+      typeof cause === "object" &&
+      typeof (cause as Record<string, unknown>).message === "string"
+        ? ((cause as Record<string, unknown>).message as string)
+        : null;
     if (causeMsg) {
       const fromCause = extractAnchorErrorMessage(causeMsg);
       if (fromCause) return fromCause;
@@ -142,13 +152,20 @@ function extractAnchorErrorMessage(log: string): string | null {
   if (msgMatch) return msgMatch[1].trim();
   if (log.includes("AnchorError")) {
     const start = log.indexOf("AnchorError");
-    return log.slice(start).replace(/^AnchorError\s+/, "").trim();
+    return log
+      .slice(start)
+      .replace(/^AnchorError\s+/, "")
+      .trim();
   }
   return null;
 }
 
 function extractProgramErrorCode(dataErr: unknown): number | null {
-  if (dataErr != null && typeof dataErr === "object" && "InstructionError" in dataErr) {
+  if (
+    dataErr != null &&
+    typeof dataErr === "object" &&
+    "InstructionError" in dataErr
+  ) {
     const ie = (dataErr as { InstructionError: unknown }).InstructionError;
     if (Array.isArray(ie) && ie.length === 2) {
       const inner = ie[1];

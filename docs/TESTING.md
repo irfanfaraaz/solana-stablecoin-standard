@@ -8,7 +8,7 @@ From repo root:
 anchor test
 ```
 
-Starts a local validator, deploys the stablecoin, transfer_hook, and oracle programs, then runs the TypeScript test suite. Expect ~1–2 minutes; 34 tests (SSS-1/SSS-2/SSS-3 flows, preset config, unit error/success cases, SDK unit tests, oracle module).
+Starts a local validator, deploys the stablecoin, transfer_hook, and oracle programs, then runs the TypeScript test suite. Expect ~1–2 minutes; 53 tests (SSS-1/SSS-2/SSS-3 flows, preset config, unit error/success cases, SDK unit tests including PDA derivation, presets, buildMintInstructions, oracle module).
 
 ## Test stack
 
@@ -53,9 +53,9 @@ Tests are modular: **`tests/stablecoin.test.ts`** is the runner (shared context 
 | **SSS-1: integration (mint → transfer → freeze → thaw)** | SSS-1 preset: init (no hook), mint, plain SPL transfer, freeze, thaw |
 | **Preset config tests** | SSS-1/SSS-2 config flags (enableTransferHook, enablePermanentDelegate) via getConfig() |
 | **SSS-3: Allowlist (POC)** | Confidential + allowlist preset, hook extra accounts, add/remove allowlist, transfer blocked then allowed; getConfidential / fundConfidential allowlist gate, deposit and applyPending instruction building |
-| **Unit: instruction error cases** | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive |
+| **Unit: instruction error cases** | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive, InvalidAmount, Paused (mint when paused) |
 | **Unit: instruction success cases** | update_roles, configure_minter, transfer_authority, freeze/thaw, remove_from_blacklist |
-| **SDK unit tests** | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load |
+| **SDK unit tests** | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load, buildMintInstructions; PDA derivation (getMintPDA, getConfigPDA, getRoleAccountPDA, getMinterPDA, blacklist/allowlist seeds); Presets (SSS_1/SSS_2/SSS_3 shape) |
 | **Oracle module** | compute_mint_amount fails without Switchboard instruction (smoke) |
 
 ## Trident fuzz
@@ -86,6 +86,14 @@ anchor test -- --grep "Unit: instruction"
 - Anchor CLI, Solana CLI, Node/yarn.
 - `anchor build` must have been run so `target/idl/*.json` and program binaries exist.
 
-## Backend / Docker
+## Backend tests
 
-Backend has no separate test suite. Health check is exercised via `docker compose up` (GET /health). See [API.md](API.md) and `backend/README.md`.
+```bash
+yarn test:backend
+```
+
+Runs Vitest for the backend (`backend/__tests__/health.test.ts`). Tests `GET /health` returns 200. See [API.md](API.md) and `backend/README.md`.
+
+## Docker
+
+Health check is exercised via `docker compose up` (GET /health).

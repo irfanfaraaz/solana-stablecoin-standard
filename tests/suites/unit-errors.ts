@@ -23,7 +23,7 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
     it("add_to_blacklist on SSS-1 mint returns ComplianceNotEnabled", async () => {
       const sss1Mint = SolanaStablecoin.getMintPDA(
         "SSS1",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const sss1SdkInstance = new SolanaStablecoin(stablecoinProgram, sss1Mint);
       const complianceSss1 = new SSSComplianceModule(sss1SdkInstance);
@@ -37,14 +37,14 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
       }
       expect(err).to.be.ok;
       expect((err as { message?: string }).message).to.include(
-        "ComplianceNotEnabled",
+        "ComplianceNotEnabled"
       );
     });
 
     it("burn with non-burner returns Unauthorized", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       let err: unknown;
@@ -62,18 +62,18 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
     it("mint over daily quota returns QuotaExceeded", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       const extraMinter = anchor.web3.Keypair.generate();
       const airdropSig = await connection.requestAirdrop(
         extraMinter.publicKey,
-        anchor.web3.LAMPORTS_PER_SOL,
+        anchor.web3.LAMPORTS_PER_SOL
       );
       const lb = await connection.getLatestBlockhash();
       await connection.confirmTransaction(
         { signature: airdropSig, ...lb },
-        "confirmed",
+        "confirmed"
       );
       await sss2Sdk
         .updateMinter(authority.publicKey, extraMinter.publicKey, true, 100)
@@ -82,7 +82,7 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
         mintPda,
         extraMinter.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       try {
         await provider.sendAndConfirm(
@@ -92,9 +92,9 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
               extraMinterAta,
               extraMinter.publicKey,
               mintPda,
-              TOKEN_2022_PROGRAM_ID,
-            ),
-          ),
+              TOKEN_2022_PROGRAM_ID
+            )
+          )
         );
       } catch (_) {}
       await sss2Sdk
@@ -109,33 +109,31 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
         err = e;
       }
       expect(err).to.be.ok;
-      expect((err as { message?: string }).message).to.include(
-        "QuotaExceeded",
-      );
+      expect((err as { message?: string }).message).to.include("QuotaExceeded");
     });
 
     it("mint with inactive minter returns MinterInactive", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       const inactiveMinter = anchor.web3.Keypair.generate();
       const airdropSig = await connection.requestAirdrop(
         inactiveMinter.publicKey,
-        anchor.web3.LAMPORTS_PER_SOL,
+        anchor.web3.LAMPORTS_PER_SOL
       );
       const lb = await connection.getLatestBlockhash();
       await connection.confirmTransaction(
         { signature: airdropSig, ...lb },
-        "confirmed",
+        "confirmed"
       );
       await sss2Sdk
         .updateMinter(
           authority.publicKey,
           inactiveMinter.publicKey,
           false,
-          1e12,
+          1e12
         )
         .then((tx) => tx.rpc());
       let err: unknown;
@@ -148,8 +146,46 @@ export function registerUnitErrorsSuite(ctx: TestContext): void {
       }
       expect(err).to.be.ok;
       expect((err as { message?: string }).message).to.include(
-        "MinterInactive",
+        "MinterInactive"
       );
+    });
+
+    it("mint with amount 0 returns InvalidAmount", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId
+      );
+      sss2Sdk.mintAddress = mintPda;
+      let err: unknown;
+      try {
+        await sss2Sdk
+          .mint(authority.publicKey, user1.publicKey, 0)
+          .then((tx) => tx.rpc());
+      } catch (e) {
+        err = e;
+      }
+      expect(err).to.be.ok;
+      expect((err as { message?: string }).message).to.include("InvalidAmount");
+    });
+
+    it("mint when paused returns Paused", async () => {
+      const mintPda = SolanaStablecoin.getMintPDA(
+        "SUSD",
+        stablecoinProgram.programId
+      );
+      sss2Sdk.mintAddress = mintPda;
+      await sss2Sdk.pause(authority.publicKey).then((tx) => tx.rpc());
+      let err: unknown;
+      try {
+        await sss2Sdk
+          .mint(authority.publicKey, user1.publicKey, 1)
+          .then((tx) => tx.rpc());
+      } catch (e) {
+        err = e;
+      }
+      expect(err).to.be.ok;
+      expect((err as { message?: string }).message).to.include("Paused");
+      await sss2Sdk.unpause(authority.publicKey).then((tx) => tx.rpc());
     });
   });
 }

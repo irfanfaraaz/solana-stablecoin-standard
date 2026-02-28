@@ -31,20 +31,20 @@ export function registerSSS1IntegrationSuite(ctx: TestContext): void {
       const txBuilder = await noMintSdk.initialize(
         authority.publicKey,
         config,
-        undefined,
+        undefined
       );
       await txBuilder.rpc();
       sss1Mint = SolanaStablecoin.getMintPDA(
         SSS1_SYMBOL,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss1Sdk = new SolanaStablecoin(stablecoinProgram, sss1Mint);
       const configPda = SolanaStablecoin.getConfigPDA(
         sss1Mint,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const configData = await stablecoinProgram.account.stablecoinConfig.fetch(
-        configPda,
+        configPda
       );
       expect(configData.enableTransferHook).to.be.false;
       expect(configData.enablePermanentDelegate).to.be.false;
@@ -55,13 +55,13 @@ export function registerSSS1IntegrationSuite(ctx: TestContext): void {
         sss1Mint,
         user1.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const user2Ata = getAssociatedTokenAddressSync(
         sss1Mint,
         user2.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const createAtaTx = new anchor.web3.Transaction().add(
         createAssociatedTokenAccountInstruction(
@@ -69,15 +69,15 @@ export function registerSSS1IntegrationSuite(ctx: TestContext): void {
           user1Ata,
           user1.publicKey,
           sss1Mint,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_2022_PROGRAM_ID
         ),
         createAssociatedTokenAccountInstruction(
           authority.publicKey,
           user2Ata,
           user2.publicKey,
           sss1Mint,
-          TOKEN_2022_PROGRAM_ID,
-        ),
+          TOKEN_2022_PROGRAM_ID
+        )
       );
       await provider.sendAndConfirm(createAtaTx);
       await sss1Sdk
@@ -89,13 +89,13 @@ export function registerSSS1IntegrationSuite(ctx: TestContext): void {
       const mintBlock = await connection.getLatestBlockhash();
       await connection.confirmTransaction(
         { signature: mintSig, ...mintBlock },
-        "finalized",
+        "finalized"
       );
       let acc = await getAccount(
         connection,
         user1Ata,
         "finalized",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(Number(acc.amount)).to.equal(500000);
       const transferIx = createTransferCheckedInstruction(
@@ -106,23 +106,23 @@ export function registerSSS1IntegrationSuite(ctx: TestContext): void {
         200000,
         6,
         [],
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const transferSig = await anchor.web3.sendAndConfirmTransaction(
         connection,
         new anchor.web3.Transaction().add(transferIx),
-        [user1],
+        [user1]
       );
       const transferBlock = await connection.getLatestBlockhash();
       await connection.confirmTransaction(
         { signature: transferSig, ...transferBlock },
-        "finalized",
+        "finalized"
       );
       acc = await getAccount(
         connection,
         user2Ata,
         "finalized",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(Number(acc.amount)).to.equal(200000);
       await sss1Sdk

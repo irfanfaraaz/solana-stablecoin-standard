@@ -2,6 +2,50 @@
 
 Run the CLI from the **repo root** with `yarn cli` (or `node cli/dist/index.js`). Ensure `target/idl/*.json` exists (`anchor build`).
 
+## First-time setup
+
+Follow this flow to build, initialize a stablecoin, and mint for the first time:
+
+**Step 1 — Build programs and tools:**
+
+```bash
+anchor build
+cd sdk && yarn build
+cd cli && yarn build
+```
+
+**Step 2 — Initialize a stablecoin (SSS-2 example):**
+
+```bash
+yarn cli init --preset sss-2 -n "My Coin" -s MCOIN -u "https://example.com" -d 6
+```
+
+Save the output `mint` address for later commands.
+
+**Step 3 — Add yourself as minter (if not auto-added):**
+
+The init keypair is usually the master and may already be a minter. If mint fails with `MinterInactive`, add your keypair:
+
+```bash
+yarn cli minters add <YOUR_PUBKEY> -m <MINT> --quota 1000000
+```
+
+**Step 4 — Mint to a recipient:**
+
+The CLI creates the recipient's Associated Token Account (ATA) if it does not exist:
+
+```bash
+yarn cli mint <RECIPIENT> <AMOUNT> -m <MINT>
+```
+
+### Troubleshooting
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| **AccountNotInitialized** | Recipient ATA missing | The CLI now creates ATAs automatically. Ensure you're on the latest build. If it still fails, create the ATA manually: `spl-token create-account <MINT> --owner <RECIPIENT>` |
+| **MinterInactive** | Your keypair is not an authorized minter | Add yourself: `yarn cli minters add <YOUR_PUBKEY> -m <MINT> --quota 1000000` |
+| **ProgramPaused** | Mint/burn/freeze/thaw are disabled | Unpause first: `yarn cli unpause -m <MINT>` |
+
 ## Admin TUI (interactive)
 
 From repo root:
@@ -55,6 +99,8 @@ Output: `mint`, `configPda`, `signature`; for SSS-2 also `transferHookInitSignat
 | `unpause` | Unpause | `yarn cli unpause -m <MINT>` |
 | `status` | Config, supply, roles | `yarn cli status -m <MINT>` |
 | `supply` | Total supply only | `yarn cli supply -m <MINT>` |
+| `roles update` | Set burner/pauser/blacklister/seizer (master only) | `yarn cli roles -m <MINT> update --burner <PUBKEY>` |
+| Transfer authority | Not in CLI; use SDK/program: `transfer_authority(new_authority)` | See [SDK.md](SDK.md) |
 
 ## SSS-2 compliance
 

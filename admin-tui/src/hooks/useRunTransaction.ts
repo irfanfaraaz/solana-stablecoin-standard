@@ -25,11 +25,7 @@ export function useRunTransaction() {
           result && typeof result === "object" && "signature" in result
             ? (result as { signature: string }).signature
             : undefined;
-        setTxStatus(
-          "success",
-          options.successMessage,
-          sig ?? undefined
-        );
+        setTxStatus("success", options.successMessage, sig ?? undefined);
         return result as T | undefined;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

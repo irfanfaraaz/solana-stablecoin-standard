@@ -19,22 +19,22 @@ export class SSSComplianceModule {
   async addToBlacklist(
     authority: PublicKey,
     accountToBlacklist: PublicKey,
-    reason?: string,
+    reason?: string
   ) {
     if (!this.sdk.mintAddress) throw new Error("Mint not set");
     const mint = this.sdk.mintAddress;
     const config = SolanaStablecoin.getConfigPDA(
       mint,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const roleAccount = SolanaStablecoin.getRoleAccountPDA(
       mint,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const blacklistEntry = SolanaStablecoin.getBlacklistEntryPDA(
       mint,
       accountToBlacklist,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
 
     return this.sdk.program.methods.addToBlacklist().accounts({
@@ -50,22 +50,22 @@ export class SSSComplianceModule {
 
   async removeFromBlacklist(
     authority: PublicKey,
-    accountToUnblacklist: PublicKey,
+    accountToUnblacklist: PublicKey
   ) {
     if (!this.sdk.mintAddress) throw new Error("Mint not set");
     const mint = this.sdk.mintAddress;
     const config = SolanaStablecoin.getConfigPDA(
       mint,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const roleAccount = SolanaStablecoin.getRoleAccountPDA(
       mint,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const blacklistEntry = SolanaStablecoin.getBlacklistEntryPDA(
       mint,
       accountToUnblacklist,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
 
     return this.sdk.program.methods.removeFromBlacklist().accounts({
@@ -82,55 +82,55 @@ export class SSSComplianceModule {
     authority: PublicKey,
     from: PublicKey,
     to: PublicKey,
-    amount: number | string,
+    amount: number | string
   ) {
     if (!this.sdk.mintAddress) throw new Error("Mint not set");
     const mint = this.sdk.mintAddress;
     const config = SolanaStablecoin.getConfigPDA(
       mint,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const roleAccount = SolanaStablecoin.getRoleAccountPDA(
       mint,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const sourceBlacklist = SolanaStablecoin.getBlacklistEntryPDA(
       mint,
       from,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const destBlacklist = SolanaStablecoin.getBlacklistEntryPDA(
       mint,
       to,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
 
     const sourceAta = getAssociatedTokenAddressSync(
       mint,
       from,
       true,
-      TOKEN_2022_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID
     );
     const destinationAta = getAssociatedTokenAddressSync(
       mint,
       to,
       true,
-      TOKEN_2022_PROGRAM_ID,
+      TOKEN_2022_PROGRAM_ID
     );
     const extraMetaList = SolanaStablecoin.getExtraAccountMetaListPDA(
       mint,
-      this.sdk.transferHookProgram!.programId,
+      this.sdk.transferHookProgram!.programId
     );
 
     const sourceAllowlist = SolanaStablecoin.getAllowlistEntryPDA(
       mint,
       from,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
     const destAllowlist = SolanaStablecoin.getAllowlistEntryPDA(
       mint,
       to,
-      this.sdk.program.programId,
+      this.sdk.program.programId
     );
 
     return this.sdk.program.methods.seize(new BN(amount)).accounts({
@@ -154,7 +154,7 @@ export class SSSComplianceModule {
 
   async initializeTransferHookExtraAccounts(
     authority: PublicKey,
-    enableAllowlist: boolean = false,
+    enableAllowlist: boolean = false
   ) {
     if (!this.sdk.transferHookProgram) {
       throw new Error("Transfer Hook Program not provided to SDK");
@@ -164,7 +164,7 @@ export class SSSComplianceModule {
     const mint = this.sdk.mintAddress;
     const extraAccountMetaList = SolanaStablecoin.getExtraAccountMetaListPDA(
       mint,
-      this.sdk.transferHookProgram.programId,
+      this.sdk.transferHookProgram.programId
     );
 
     return this.sdk.transferHookProgram.methods

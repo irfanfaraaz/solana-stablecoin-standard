@@ -8,9 +8,19 @@ export interface StablecoinService {
     recipient: PublicKey,
     amount: string
   ): Promise<{ signature: string }>;
-  burn(authority: PublicKey, from: PublicKey, amount: string): Promise<{ signature: string }>;
-  freezeAccount(authority: PublicKey, account: PublicKey): Promise<{ signature: string }>;
-  thawAccount(authority: PublicKey, account: PublicKey): Promise<{ signature: string }>;
+  burn(
+    authority: PublicKey,
+    from: PublicKey,
+    amount: string
+  ): Promise<{ signature: string }>;
+  freezeAccount(
+    authority: PublicKey,
+    account: PublicKey
+  ): Promise<{ signature: string }>;
+  thawAccount(
+    authority: PublicKey,
+    account: PublicKey
+  ): Promise<{ signature: string }>;
   pause(authority: PublicKey): Promise<{ signature: string }>;
   unpause(authority: PublicKey): Promise<{ signature: string }>;
   addToBlacklist(
@@ -22,8 +32,14 @@ export interface StablecoinService {
     authority: PublicKey,
     address: PublicKey
   ): Promise<{ signature: string }>;
-  addToAllowlist(authority: PublicKey, wallet: PublicKey): Promise<{ signature: string }>;
-  removeFromAllowlist(authority: PublicKey, wallet: PublicKey): Promise<{ signature: string }>;
+  addToAllowlist(
+    authority: PublicKey,
+    wallet: PublicKey
+  ): Promise<{ signature: string }>;
+  removeFromAllowlist(
+    authority: PublicKey,
+    wallet: PublicKey
+  ): Promise<{ signature: string }>;
   seize(
     authority: PublicKey,
     from: PublicKey,

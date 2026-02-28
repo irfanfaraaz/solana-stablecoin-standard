@@ -42,29 +42,29 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       const sdk = new SolanaStablecoin(
         stablecoinProgram,
         undefined,
-        transferHookProgram,
+        transferHookProgram
       );
       const txBuilder = await sdk.initialize(
         authority.publicKey,
         config,
-        transferHookProgram.programId,
+        transferHookProgram.programId
       );
       await txBuilder.rpc();
       pusdMint = SolanaStablecoin.getMintPDA(
         PUSD_SYMBOL,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss3Sdk = new SolanaStablecoin(
         stablecoinProgram,
         pusdMint,
-        transferHookProgram,
+        transferHookProgram
       );
       const configPda = SolanaStablecoin.getConfigPDA(
         pusdMint,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const configData = await stablecoinProgram.account.stablecoinConfig.fetch(
-        configPda,
+        configPda
       );
       expect(configData.enableTransferHook).to.be.true;
       expect(configData.enableAllowlist).to.be.true;
@@ -75,17 +75,17 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       const compliance = new SSSComplianceModule(sss3Sdk);
       const initHook = await compliance.initializeTransferHookExtraAccounts(
         authority.publicKey,
-        true,
+        true
       );
       const sig = await initHook.rpc();
       const latestBlockhash = await connection.getLatestBlockhash();
       await connection.confirmTransaction(
         { signature: sig, ...latestBlockhash },
-        "confirmed",
+        "confirmed"
       );
       const extraListPda = SolanaStablecoin.getExtraAccountMetaListPDA(
         pusdMint,
-        transferHookProgram.programId,
+        transferHookProgram.programId
       );
       const accInfo = await connection.getAccountInfo(extraListPda);
       expect(accInfo).to.not.be.null;
@@ -94,7 +94,7 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
     it("add_to_allowlist and remove_from_allowlist (master authority)", async () => {
       const addTx = await sss3Sdk.addToAllowlist(
         authority.publicKey,
-        user1.publicKey,
+        user1.publicKey
       );
       const addSig = await addTx.rpc();
       await connection.confirmTransaction(
@@ -102,21 +102,21 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
           signature: addSig,
           ...(await connection.getLatestBlockhash()),
         },
-        "confirmed",
+        "confirmed"
       );
       const allowlistPda = SolanaStablecoin.getAllowlistEntryPDA(
         pusdMint,
         user1.publicKey,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const entry = await stablecoinProgram.account.allowlistEntry.fetch(
-        allowlistPda,
+        allowlistPda
       );
       expect(entry.wallet.equals(user1.publicKey)).to.be.true;
       expect(entry.isAllowed).to.be.true;
       const removeTx = await sss3Sdk.removeFromAllowlist(
         authority.publicKey,
-        user1.publicKey,
+        user1.publicKey
       );
       const removeSig = await removeTx.rpc();
       await connection.confirmTransaction(
@@ -124,10 +124,10 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
           signature: removeSig,
           ...(await connection.getLatestBlockhash()),
         },
-        "confirmed",
+        "confirmed"
       );
       const entryAfter = await stablecoinProgram.account.allowlistEntry.fetch(
-        allowlistPda,
+        allowlistPda
       );
       expect(entryAfter.isAllowed).to.be.false;
     });
@@ -138,14 +138,14 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
         .then((tx) => tx.rpc());
       await connection.confirmTransaction(
         { signature: addUser1Sig, ...(await connection.getLatestBlockhash()) },
-        "confirmed",
+        "confirmed"
       );
       const addUser2Sig = await sss3Sdk
         .addToAllowlist(authority.publicKey, user2.publicKey)
         .then((tx) => tx.rpc());
       await connection.confirmTransaction(
         { signature: addUser2Sig, ...(await connection.getLatestBlockhash()) },
-        "confirmed",
+        "confirmed"
       );
       const removeUser2Sig = await sss3Sdk
         .removeFromAllowlist(authority.publicKey, user2.publicKey)
@@ -155,19 +155,19 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
           signature: removeUser2Sig,
           ...(await connection.getLatestBlockhash()),
         },
-        "confirmed",
+        "confirmed"
       );
       const user1PusdAta = getAssociatedTokenAddressSync(
         pusdMint,
         user1.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const user2PusdAta = getAssociatedTokenAddressSync(
         pusdMint,
         user2.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const createAtaTx = new anchor.web3.Transaction().add(
         createAssociatedTokenAccountInstruction(
@@ -175,15 +175,15 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
           user1PusdAta,
           user1.publicKey,
           pusdMint,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_2022_PROGRAM_ID
         ),
         createAssociatedTokenAccountInstruction(
           authority.publicKey,
           user2PusdAta,
           user2.publicKey,
           pusdMint,
-          TOKEN_2022_PROGRAM_ID,
-        ),
+          TOKEN_2022_PROGRAM_ID
+        )
       );
       await provider.sendAndConfirm(createAtaTx);
       await sss3Sdk
@@ -194,13 +194,13 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
         .then((tx) => tx.rpc());
       await connection.confirmTransaction(
         { signature: mintSig, ...(await connection.getLatestBlockhash()) },
-        "confirmed",
+        "confirmed"
       );
       const user1AfterMint = await getAccount(
         connection,
         user1PusdAta,
         "confirmed",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(Number(user1AfterMint.amount)).to.equal(100_000);
       const transferFailIx =
@@ -214,7 +214,7 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
           6,
           [],
           undefined,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_2022_PROGRAM_ID
         );
       const txFail = new anchor.web3.Transaction().add(transferFailIx);
       let transferBlocked = false;
@@ -229,19 +229,19 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       }
       expect(transferBlocked).to.be.true;
       expect(errMsg).to.match(
-        /NotOnAllowlist|not on the allowlist|0x1771|6001/i,
+        /NotOnAllowlist|not on the allowlist|0x1771|6001/i
       );
       const user1AfterBlocked = await getAccount(
         connection,
         user1PusdAta,
         "confirmed",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const user2AfterBlocked = await getAccount(
         connection,
         user2PusdAta,
         "confirmed",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(Number(user1AfterBlocked.amount)).to.equal(100_000);
       expect(Number(user2AfterBlocked.amount)).to.equal(0);
@@ -250,7 +250,7 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
         .then((tx) => tx.rpc());
       await connection.confirmTransaction(
         { signature: add2Sig, ...(await connection.getLatestBlockhash()) },
-        "confirmed",
+        "confirmed"
       );
       const transferOkIx =
         await createTransferCheckedWithTransferHookInstruction(
@@ -263,30 +263,30 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
           6,
           [],
           undefined,
-          TOKEN_2022_PROGRAM_ID,
+          TOKEN_2022_PROGRAM_ID
         );
       const transferOkSig = await anchor.web3.sendAndConfirmTransaction(
         connection,
         new anchor.web3.Transaction().add(transferOkIx),
-        [user1],
+        [user1]
       );
       await connection.confirmTransaction(transferOkSig, "finalized");
       const transferOkStatus = await connection.getSignatureStatus(
         transferOkSig,
-        { searchTransactionHistory: true },
+        { searchTransactionHistory: true }
       );
       expect(transferOkStatus.value?.err ?? null).to.equal(null);
       const user2Acc = await getAccount(
         connection,
         user2PusdAta,
         "finalized",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const user1Acc = await getAccount(
         connection,
         user1PusdAta,
         "finalized",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(Number(user1Acc.amount)).to.equal(50_000);
       expect(Number(user2Acc.amount)).to.equal(50_000);
@@ -298,15 +298,11 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       const notAllowlistedWallet = anchor.web3.Keypair.generate().publicKey;
       let thrown = false;
       try {
-        await confidential.fundConfidential(
-          notAllowlistedWallet,
-          1_000,
-          6,
-        );
+        await confidential.fundConfidential(notAllowlistedWallet, 1_000, 6);
       } catch (e: any) {
         thrown = true;
         expect(e?.message ?? String(e)).to.match(
-          /not on allowlist|cannot fund confidential/i,
+          /not on allowlist|cannot fund confidential/i
         );
       }
       expect(thrown).to.be.true;
@@ -320,7 +316,7 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       const ix = await confidential.fundConfidential(
         user1.publicKey,
         10_000,
-        6,
+        6
       );
       expect(ix.programId.equals(TOKEN_2022_PROGRAM_ID)).to.be.true;
       expect(ix.keys.length).to.equal(3);
@@ -329,7 +325,7 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
         pusdMint,
         user1.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(ix.keys[0].pubkey.equals(user1Ata)).to.be.true;
       expect(ix.keys[1].pubkey.equals(pusdMint)).to.be.true;

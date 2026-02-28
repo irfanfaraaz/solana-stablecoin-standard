@@ -4,8 +4,11 @@ import { PublicKey } from "@solana/web3.js";
 
 function getMintFileDir(): string {
   const cwd = process.cwd();
-  const inRepoRoot = fs.existsSync(path.join(cwd, "target", "idl", "stablecoin.json"));
-  const inAdminTui = fs.existsSync(path.join(cwd, "package.json")) && !inRepoRoot;
+  const inRepoRoot = fs.existsSync(
+    path.join(cwd, "target", "idl", "stablecoin.json")
+  );
+  const inAdminTui =
+    fs.existsSync(path.join(cwd, "package.json")) && !inRepoRoot;
   if (inRepoRoot) return path.join(cwd, "admin-tui");
   if (inAdminTui) return cwd;
   return path.join(cwd, "admin-tui");

@@ -23,9 +23,8 @@ export async function buildCreateStablecoinInstructions(
   authorityPublicKey: PublicKey,
   params: CreateStablecoinParams
 ): Promise<TransactionInstruction[]> {
-  const { SolanaStablecoin, SSS_1_PRESET, SSS_2_PRESET, SSS_3_PRESET } = await import(
-    "@stbr/sss-token"
-  );
+  const { SolanaStablecoin, SSS_1_PRESET, SSS_2_PRESET, SSS_3_PRESET } =
+    await import("@stbr/sss-token");
   const { stablecoinProgram, transferHookProgram } = await createSdkContext(
     authorityPublicKey
   );
@@ -34,8 +33,8 @@ export async function buildCreateStablecoinInstructions(
     params.preset === "sss-3"
       ? { ...SSS_3_PRESET }
       : params.preset === "sss-2"
-        ? { ...SSS_2_PRESET }
-        : { ...SSS_1_PRESET };
+      ? { ...SSS_2_PRESET }
+      : { ...SSS_1_PRESET };
   const config = {
     name: params.name,
     symbol: params.symbol,

@@ -1,8 +1,11 @@
 # Oracle Integration Module
 
-The Oracle Integration Module is a **separate Anchor program** that computes
-stablecoin mint / redeem amounts from off-chain prices, without coupling
-the core stablecoin program to any particular oracle vendor.
+The Oracle Integration Module is a **separate Anchor program** that provides
+**peg-based mint and redeem pricing**: it computes how many stablecoin tokens
+to mint (or burn) for a given peg amount (e.g. 1 USD) using verified
+Switchboard prices. Clients call the oracle, read the computed amount from
+return data, then call the stablecoin program’s existing mint/burn
+instructions. The core stablecoin program is not tied to any oracle vendor.
 
 - Program name: `oracle`
 - Program ID (devnet): `4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu`

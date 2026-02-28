@@ -11,7 +11,8 @@ export interface ScreeningResult {
 }
 
 const SCREENING_URL = process.env.SCREENING_URL?.trim() || "";
-const SCREENING_METHOD = (process.env.SCREENING_METHOD?.toUpperCase() || "POST") as "GET" | "POST";
+const SCREENING_METHOD = (process.env.SCREENING_METHOD?.toUpperCase() ||
+  "POST") as "GET" | "POST";
 const SCREENING_TIMEOUT_MS = Math.min(
   Math.max(parseInt(process.env.SCREENING_TIMEOUT_MS || "5000", 10), 1000),
   30000
@@ -30,7 +31,11 @@ export async function screenAddress(
   if (!mint) return { allowed: false, reason: "Mint not set" };
 
   const programId = sdk.program.programId;
-  const blacklistPda = SolanaStablecoin.getBlacklistEntryPDA(mint, address, programId);
+  const blacklistPda = SolanaStablecoin.getBlacklistEntryPDA(
+    mint,
+    address,
+    programId
+  );
 
   let blacklistAllowed = true;
   try {
@@ -56,7 +61,9 @@ export async function screenAddress(
     const params = { address: address.toBase58(), mint: mint.toBase58() };
     const url =
       SCREENING_METHOD === "GET"
-        ? `${SCREENING_URL}?${new URLSearchParams(params as Record<string, string>).toString()}`
+        ? `${SCREENING_URL}?${new URLSearchParams(
+            params as Record<string, string>
+          ).toString()}`
         : SCREENING_URL;
     const res = await fetch(url, {
       method: SCREENING_METHOD,
@@ -66,7 +73,10 @@ export async function screenAddress(
     });
     clearTimeout(timeoutId);
     if (!res.ok) {
-      return { allowed: false, reason: `Screening service error: ${res.status}` };
+      return {
+        allowed: false,
+        reason: `Screening service error: ${res.status}`,
+      };
     }
     const data = (await res.json()) as { allowed?: boolean; reason?: string };
     const externalAllowed = data?.allowed !== false;
@@ -76,6 +86,11 @@ export async function screenAddress(
     };
   } catch (e) {
     clearTimeout(timeoutId);
-    return { allowed: false, reason: `Screening call failed: ${e instanceof Error ? e.message : String(e)}` };
+    return {
+      allowed: false,
+      reason: `Screening call failed: ${
+        e instanceof Error ? e.message : String(e)
+      }`,
+    };
   }
 }

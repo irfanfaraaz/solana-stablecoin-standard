@@ -1,12 +1,23 @@
 # Solana Stablecoin Standard (SSS)
 
+[![Build](https://github.com/OWNER/solana-stablecoin-standard/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/solana-stablecoin-standard/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-53%20passing-brightgreen)](docs/TESTING.md)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Reference implementation of the Solana Stablecoin Standard: a configurable Token-2022 stablecoin with optional compliance (freeze, blacklist, seize) and three presets — **SSS-1** (minimal), **SSS-2** (compliant), and **SSS-3** (allowlist-gated confidential).
+
+- [Quick start](#quick-start)
+- [Program IDs](#program-ids-devnet--localnet)
+- [Preset comparison](#preset-comparison)
+- [Architecture](#architecture-high-level)
+- [Tests](#tests)
+- [Project structure](#project-structure)
 
 ## Overview
 
-- **Base program** (`stablecoin`): Initialize mint, config, roles; mint/burn, freeze/thaw, pause/unpause; minter management; optional blacklist and seize (SSS-2).
+- **Base program** (`stablecoin`): Initialize mint, config, roles; mint/burn, freeze/thaw, pause/unpause; minter management; optional blacklist and seize (SSS-2); `transfer_authority` for atomic handover of master authority.
 - **Transfer hook program** (`transfer_hook`): Validates transfers against blacklist when compliance is enabled.
-- **Oracle program** (`oracle`): Computes mint / redeem amounts from Switchboard prices; separate pricing module (no CPI from stablecoin).
+- **Oracle program** (`oracle`): Separate program for **peg-based mint/redeem pricing** — reads Switchboard prices and returns token amounts via return data; clients use this to mint or burn the right amount against a peg (e.g. 1 USD). No CPI from the stablecoin program.
 - **TypeScript SDK** (`@stbr/sss-token`): Create/load stablecoins, operations, presets, compliance module.
 - **Admin CLI** (`sss-token`): Init, mint, burn, freeze, thaw, pause, blacklist, seize, status, supply, minters.
 - **Admin TUI** (`sss-tui`): Interactive terminal UI (Ink) for status, mint, burn, freeze/thaw, pause/unpause, blacklist, allowlist, seize.
@@ -143,10 +154,10 @@ flowchart TB
   Oracle -.->|"return data"| Core
 ```
 
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Layer model, PDAs, security.
-- [SDK.md](docs/SDK.md) — SDK usage and examples.
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — Layer model, PDAs, roles (four roles + master authority), security.
+- [SDK.md](docs/SDK.md) — SDK usage, presets, operations, transfer authority, and examples.
   - Includes `sdk/src/oracle.ts` helper for reading oracle return data.
-- [OPERATIONS.md](docs/OPERATIONS.md) — Operator runbook and CLI reference.
+- [OPERATIONS.md](docs/OPERATIONS.md) — Operator runbook and CLI reference (including roles update).
 - [COMPLIANCE.md](docs/COMPLIANCE.md) — Regulatory and audit considerations.
 - [API.md](docs/API.md) — Backend API reference.
 - [DEPLOYMENT.md](docs/DEPLOYMENT.md) — Devnet deployment and proof (Program IDs + example tx links).
@@ -160,7 +171,7 @@ flowchart TB
 anchor test
 ```
 
-Runs integration tests (SSS-1, SSS-2, and SSS-3 flows) and unit-style error cases. Requires a local validator. See [TESTING.md](docs/TESTING.md) for describe blocks and filter examples (e.g. `--grep "SSS-3: Allowlist"`).
+Runs integration tests (SSS-1, SSS-2, and SSS-3 flows), unit-style error cases, SDK PDA/preset tests, and oracle module tests. Requires a local validator. See [TESTING.md](docs/TESTING.md) for describe blocks and filter examples (e.g. `--grep "SSS-3: Allowlist"`).
 
 ## Project structure
 

@@ -18,7 +18,10 @@ function resolveRepoRoot(): string {
     return cwd;
   }
   const parent = path.dirname(cwd);
-  if (parent !== cwd && fs.existsSync(path.join(parent, "target", "idl", "stablecoin.json"))) {
+  if (
+    parent !== cwd &&
+    fs.existsSync(path.join(parent, "target", "idl", "stablecoin.json"))
+  ) {
     return parent;
   }
   return cwd;
@@ -75,8 +78,7 @@ export function loadPrograms(
   const stablecoinIdl = JSON.parse(
     fs.readFileSync(stablecoinIdlPath, "utf-8")
   ) as object;
-  (stablecoinIdl as { address?: string }).address =
-    PROGRAM_IDS.stablecoin;
+  (stablecoinIdl as { address?: string }).address = PROGRAM_IDS.stablecoin;
   const stablecoinProgram = new Program(stablecoinIdl as any, provider);
 
   let transferHookProgram: Program | null = null;

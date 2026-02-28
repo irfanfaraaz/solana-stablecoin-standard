@@ -87,7 +87,7 @@ export async function fetchAllStablecoinConfigs(
         ),
         enableConfidentialTransfers: Boolean(
           decoded.enable_confidential_transfers ??
-          (decoded as any).enableConfidentialTransfers
+            (decoded as any).enableConfidentialTransfers
         ),
       });
     } catch {

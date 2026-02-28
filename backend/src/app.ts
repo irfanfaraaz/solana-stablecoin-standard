@@ -56,9 +56,9 @@ function loadKeypair(): Keypair {
     return Keypair.fromSecretKey(
       Uint8Array.from(
         JSON.parse(
-          Buffer.from(process.env.KEYPAIR_JSON, "base64").toString("utf-8"),
-        ),
-      ),
+          Buffer.from(process.env.KEYPAIR_JSON, "base64").toString("utf-8")
+        )
+      )
     );
   }
   const resolved = KEYPAIR_PATH.startsWith("~")
@@ -70,7 +70,7 @@ function loadKeypair(): Keypair {
 
 function getPrograms(
   connection: Connection,
-  wallet: Wallet,
+  wallet: Wallet
 ): {
   stablecoinProgram: Program<any>;
   transferHookProgram: Program<any> | null;
@@ -80,17 +80,17 @@ function getPrograms(
     repoRoot,
     "target",
     "idl",
-    "stablecoin.json",
+    "stablecoin.json"
   );
   const transferHookIdlPath = path.join(
     repoRoot,
     "target",
     "idl",
-    "transfer_hook.json",
+    "transfer_hook.json"
   );
   if (!fs.existsSync(stablecoinIdlPath)) {
     throw new Error(
-      `IDL not found at ${stablecoinIdlPath}. Set WORKSPACE_ROOT or run from repo root.`,
+      `IDL not found at ${stablecoinIdlPath}. Set WORKSPACE_ROOT or run from repo root.`
     );
   }
   const provider = new AnchorProvider(connection, wallet, {
@@ -102,7 +102,7 @@ function getPrograms(
   let transferHookProgram: Program<any> | null = null;
   if (fs.existsSync(transferHookIdlPath)) {
     const transferHookIdl = JSON.parse(
-      fs.readFileSync(transferHookIdlPath, "utf-8"),
+      fs.readFileSync(transferHookIdlPath, "utf-8")
     );
     (transferHookIdl as any).address = PROGRAM_IDS.transferHook;
     transferHookProgram = new Program(transferHookIdl, provider);
@@ -116,12 +116,12 @@ function getSdk(mint: PublicKey) {
   const wallet = new Wallet(keypair);
   const { stablecoinProgram, transferHookProgram } = getPrograms(
     connection,
-    wallet,
+    wallet
   );
   return new SolanaStablecoin(
     stablecoinProgram as any,
     mint,
-    (transferHookProgram || undefined) as any,
+    (transferHookProgram || undefined) as any
   );
 }
 
@@ -132,7 +132,7 @@ function logAudit(event: string, payload: Record<string, unknown>) {
 }
 
 async function getSlotForSignature(
-  signature: string,
+  signature: string
 ): Promise<number | undefined> {
   try {
     const conn = new Connection(RPC_URL);
@@ -319,7 +319,7 @@ app.post("/blacklist/add", async (req: Request, res: Response) => {
     const tx = await compliance.addToBlacklist(
       keypair.publicKey,
       address,
-      reason,
+      reason
     );
     const sig = await tx.rpc();
     logAudit("blacklist_add", {
@@ -409,7 +409,7 @@ app.post("/seize", async (req: Request, res: Response) => {
       keypair.publicKey,
       from,
       treasury,
-      amount,
+      amount
     );
     const sig = await tx.rpc();
     logAudit("seize", {
@@ -450,21 +450,21 @@ app.get("/audit/export", (req: Request, res: Response) => {
     const rows = auditLog.map((e) => {
       const p = e.payload as Record<string, unknown>;
       return `"${e.time}","${e.event}","${esc(p?.mint)}","${esc(
-        p?.signature,
+        p?.signature
       )}","${esc(p?.recipient)}","${esc(p?.amount)}","${esc(p?.from)}","${esc(
-        p?.address,
+        p?.address
       )}","${esc(p?.reason)}","${esc(p?.treasury)}"`;
     });
     res.setHeader("Content-Type", "text/csv");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="audit-${ts}.csv"`,
+      `attachment; filename="audit-${ts}.csv"`
     );
     res.send(header + rows.join("\n"));
   } else {
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="audit-${ts}.json"`,
+      `attachment; filename="audit-${ts}.json"`
     );
     res.json(auditLog);
   }
@@ -489,20 +489,24 @@ app.get("/events", (req: Request, res: Response) => {
   }
 });
 
-const server = app.listen(PORT, () => {
-  log.info(`SSS backend listening on port ${PORT}; RPC=${RPC_URL}`);
-  const indexerEnabled =
-    process.env.INDEXER_ENABLED === "true" ||
-    process.env.INDEXER_ENABLED === "1";
-  if (indexerEnabled) {
-    const conn = new Connection(RPC_URL);
-    const programId = new PublicKey(PROGRAM_IDS.stablecoin);
-    const pollMs = parseInt(process.env.INDEXER_POLL_MS || "8000", 10);
-    startIndexer(conn, programId, isNaN(pollMs) ? 8000 : pollMs);
-    log.info(`Indexer started (poll ${pollMs}ms)`);
-  }
-});
+export { app };
 
-server.on("error", (err) => {
-  log.error("Server error", { error: String(err) });
-});
+if (process.env.NODE_ENV !== "test") {
+  const server = app.listen(PORT, () => {
+    log.info(`SSS backend listening on port ${PORT}; RPC=${RPC_URL}`);
+    const indexerEnabled =
+      process.env.INDEXER_ENABLED === "true" ||
+      process.env.INDEXER_ENABLED === "1";
+    if (indexerEnabled) {
+      const conn = new Connection(RPC_URL);
+      const programId = new PublicKey(PROGRAM_IDS.stablecoin);
+      const pollMs = parseInt(process.env.INDEXER_POLL_MS || "8000", 10);
+      startIndexer(conn, programId, isNaN(pollMs) ? 8000 : pollMs);
+      log.info(`Indexer started (poll ${pollMs}ms)`);
+    }
+  });
+
+  server.on("error", (err) => {
+    log.error("Server error", { error: String(err) });
+  });
+}

@@ -1,0 +1,12 @@
+# Build outputs
+dist/
+target/
+.next/
+node_modules/
+
+# Lock files
+yarn.lock
+package-lock.json
+
+# IDL (generated)
+**/idl/*.json

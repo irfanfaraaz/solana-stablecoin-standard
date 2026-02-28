@@ -112,4 +112,6 @@ Run from repo root with Devnet RPC and keypair funded on Devnet.
 
 **Mint address (example stablecoin):** `9uengGxYvYU9hRSnxHoZfFVk9nu9X2DKQoKwkrhXFqQW`
 
+**Fresh proof run (PCOIN):** See `deployments/devnet-proof.json` for program IDs and transaction signatures from a recent CLI run (init, add minter, mint, blacklist).
+
 You can verify the mint on devnet: `yarn cli status -m 9uengGxYvYU9hRSnxHoZfFVk9nu9X2DKQoKwkrhXFqQW --rpc-url https://api.devnet.solana.com`. Transaction links also work on [Solscan](https://solscan.io/) (devnet): `https://solscan.io/tx/<signature>?cluster=devnet`.

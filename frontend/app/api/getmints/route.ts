@@ -4,9 +4,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 const STABLECOIN_CONFIG_ACCOUNT_SIZE = 428;
 
 /** Decode StablecoinConfig account data (Borsh) without relying on Anchor account registry. */
-function decodeStablecoinConfig(
-  data: Buffer | Uint8Array
-): {
+function decodeStablecoinConfig(data: Buffer | Uint8Array): {
   mint: string;
   name: string;
   symbol: string;
@@ -76,7 +74,12 @@ export async function GET(request: Request) {
 
     const step1Count = accounts.length;
     if (step1Count > 0) {
-      console.log("[getmints] programId=%s getProgramAccounts(dataSize=%d)=%d", programIdStr, STABLECOIN_CONFIG_ACCOUNT_SIZE, step1Count);
+      console.log(
+        "[getmints] programId=%s getProgramAccounts(dataSize=%d)=%d",
+        programIdStr,
+        STABLECOIN_CONFIG_ACCOUNT_SIZE,
+        step1Count
+      );
     }
 
     if (accounts.length === 0) {
@@ -89,11 +92,23 @@ export async function GET(request: Request) {
       );
       // Always log when fallback ran so we can debug empty getmints
       console.log("[getmints] programId=%s rpc=%s", programIdStr, rpcUrl);
-      console.log("[getmints] getProgramAccounts(dataSize=%d)=%d", STABLECOIN_CONFIG_ACCOUNT_SIZE, step1Count);
-      console.log("[getmints] getProgramAccounts(no filter)=%d", totalProgramAccounts);
+      console.log(
+        "[getmints] getProgramAccounts(dataSize=%d)=%d",
+        STABLECOIN_CONFIG_ACCOUNT_SIZE,
+        step1Count
+      );
+      console.log(
+        "[getmints] getProgramAccounts(no filter)=%d",
+        totalProgramAccounts
+      );
       if (totalProgramAccounts > 0) {
-        const sizes = [...new Set(all.map((a) => a.account.data.length))].sort((a, b) => a - b);
-        console.log("[getmints] account data sizes in program: %s", sizes.join(", "));
+        const sizes = [...new Set(all.map((a) => a.account.data.length))].sort(
+          (a, b) => a - b
+        );
+        console.log(
+          "[getmints] account data sizes in program: %s",
+          sizes.join(", ")
+        );
       }
     }
 
@@ -125,13 +140,16 @@ export async function GET(request: Request) {
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : String(e);
         decodeErrors.push(`${account.data.length}b: ${errMsg}`);
-        console.log("[getmints] decode failed size=%d %s", account.data.length, errMsg);
+        console.log(
+          "[getmints] decode failed size=%d %s",
+          account.data.length,
+          errMsg
+        );
       }
     }
 
     rows.sort(
-      (a, b) =>
-        a.symbol.localeCompare(b.symbol) || a.mint.localeCompare(b.mint)
+      (a, b) => a.symbol.localeCompare(b.symbol) || a.mint.localeCompare(b.mint)
     );
 
     if (debug) {
@@ -153,9 +171,6 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[getmints] error", message);
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

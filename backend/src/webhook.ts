@@ -34,7 +34,10 @@ export interface WebhookPayload {
   [key: string]: unknown;
 }
 
-export function dispatchWebhook(event: WebhookEventType, payload: WebhookPayload): void {
+export function dispatchWebhook(
+  event: WebhookEventType,
+  payload: WebhookPayload
+): void {
   const url = getWebhookUrl(event);
   if (!url) return;
   const webhookUrl: string = url;
@@ -71,7 +74,10 @@ export function dispatchWebhook(event: WebhookEventType, payload: WebhookPayload
           attempt++;
           setTimeout(doSend, BACKOFF_MS[attempt - 1]);
         } else {
-          log.error("Webhook delivery failed after retries", { event, url: webhookUrl });
+          log.error("Webhook delivery failed after retries", {
+            event,
+            url: webhookUrl,
+          });
         }
       });
   }

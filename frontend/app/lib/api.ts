@@ -20,19 +20,28 @@ function getHeaders(): Record<string, string> {
 export async function apiGet<T = unknown>(path: string): Promise<T> {
   const base = getBackendBaseUrl();
   if (!base) throw new Error("NEXT_PUBLIC_BACKEND_URL is not set");
-  const url = path.startsWith("http") ? path : `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = path.startsWith("http")
+    ? path
+    : `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, { method: "GET", headers: getHeaders() });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(res.status === 403 ? text || "Forbidden" : text || `HTTP ${res.status}`);
+    throw new Error(
+      res.status === 403 ? text || "Forbidden" : text || `HTTP ${res.status}`
+    );
   }
   return res.json() as Promise<T>;
 }
 
-export async function apiPost<T = unknown>(path: string, body: Record<string, unknown>): Promise<T> {
+export async function apiPost<T = unknown>(
+  path: string,
+  body: Record<string, unknown>
+): Promise<T> {
   const base = getBackendBaseUrl();
   if (!base) throw new Error("NEXT_PUBLIC_BACKEND_URL is not set");
-  const url = path.startsWith("http") ? path : `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = path.startsWith("http")
+    ? path
+    : `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, {
     method: "POST",
     headers: getHeaders(),
@@ -40,7 +49,9 @@ export async function apiPost<T = unknown>(path: string, body: Record<string, un
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(res.status === 403 ? text || "Forbidden" : text || `HTTP ${res.status}`);
+    throw new Error(
+      res.status === 403 ? text || "Forbidden" : text || `HTTP ${res.status}`
+    );
   }
   return res.json() as Promise<T>;
 }
@@ -49,8 +60,11 @@ export async function apiPost<T = unknown>(path: string, body: Record<string, un
 export async function apiGetBlob(path: string): Promise<Blob> {
   const base = getBackendBaseUrl();
   if (!base) throw new Error("NEXT_PUBLIC_BACKEND_URL is not set");
-  const url = path.startsWith("http") ? path : `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+  const url = path.startsWith("http")
+    ? path
+    : `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, { method: "GET", headers: getHeaders() });
-  if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+  if (!res.ok)
+    throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
   return res.blob();
 }

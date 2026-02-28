@@ -59,8 +59,11 @@ export async function createSdkContext(
   rpcUrl: string = RPC_URL
 ) {
   const connection = new Connection(rpcUrl, { commitment: "confirmed" });
-  const { stablecoin: stablecoinIdl, transferHook: transferHookIdl, oracle: oracleIdl } =
-    await fetchIdl();
+  const {
+    stablecoin: stablecoinIdl,
+    transferHook: transferHookIdl,
+    oracle: oracleIdl,
+  } = await fetchIdl();
 
   const wallet = createAnchorWalletAdapter(walletPublicKey);
   const provider = new AnchorProvider(connection, wallet, {

@@ -9,12 +9,12 @@ export function registerPresetConfigSuite(ctx: TestContext): void {
     it("SSS-2 mint has enableTransferHook and enablePermanentDelegate true", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const sdk = new SolanaStablecoin(
         stablecoinProgram,
         mintPda,
-        transferHookProgram,
+        transferHookProgram
       );
       const config = await sdk.getConfig();
       expect(config.enableTransferHook).to.be.true;
@@ -30,7 +30,7 @@ export function registerPresetConfigSuite(ctx: TestContext): void {
     it("SSS-1 mint has enableTransferHook and enablePermanentDelegate false", async () => {
       const sss1Mint = SolanaStablecoin.getMintPDA(
         "SSS1",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const sdk = new SolanaStablecoin(stablecoinProgram, sss1Mint);
       const config = await sdk.getConfig();
@@ -41,6 +41,25 @@ export function registerPresetConfigSuite(ctx: TestContext): void {
       expect(config.symbol).to.equal("SSS1");
       expect(config.uri).to.equal("https://example.com/sss1");
       expect(config.defaultAccountFrozen).to.be.false;
+    });
+
+    it("SSS-3 mint has enableConfidentialTransfers and enableAllowlist true", async () => {
+      const pusdMint = SolanaStablecoin.getMintPDA(
+        "PUSD",
+        stablecoinProgram.programId
+      );
+      const sdk = new SolanaStablecoin(
+        stablecoinProgram,
+        pusdMint,
+        transferHookProgram
+      );
+      const config = await sdk.getConfig();
+      expect(config.enableConfidentialTransfers).to.be.true;
+      expect(config.enableAllowlist).to.be.true;
+      expect(config.enableTransferHook).to.be.true;
+      expect(config.decimals).to.equal(6);
+      expect(config.name).to.equal("Private USD");
+      expect(config.symbol).to.equal("PUSD");
     });
   });
 }

@@ -15,11 +15,11 @@ describe("solana-stablecoin-standard", () => {
   before(async () => {
     const airdrop1 = await ctx.connection.requestAirdrop(
       ctx.user1.publicKey,
-      10 * anchor.web3.LAMPORTS_PER_SOL,
+      10 * anchor.web3.LAMPORTS_PER_SOL
     );
     const airdrop2 = await ctx.connection.requestAirdrop(
       ctx.user2.publicKey,
-      10 * anchor.web3.LAMPORTS_PER_SOL,
+      10 * anchor.web3.LAMPORTS_PER_SOL
     );
     const latestBlockHash = await ctx.connection.getLatestBlockhash();
     await ctx.connection.confirmTransaction({
@@ -36,8 +36,8 @@ describe("solana-stablecoin-standard", () => {
 
   registerSSS2VanillaSuite(ctx);
   registerSSS1IntegrationSuite(ctx);
-  registerPresetConfigSuite(ctx);
   registerSSS3AllowlistSuite(ctx);
+  registerPresetConfigSuite(ctx);
   registerUnitErrorsSuite(ctx);
   registerUnitSuccessSuite(ctx);
   registerSdkUnitSuite(ctx);

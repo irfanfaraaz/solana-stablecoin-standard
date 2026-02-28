@@ -25,7 +25,7 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
     it("update_roles updates burner and pauser", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       const rolesBefore = await sss2Sdk.getRoles();
@@ -39,10 +39,10 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
         .then((tx) => tx.rpc());
       const rolesAfter = await sss2Sdk.getRoles();
       expect(rolesAfter.burner.toBase58()).to.equal(
-        newBurner.publicKey.toBase58(),
+        newBurner.publicKey.toBase58()
       );
       expect(rolesAfter.pauser.toBase58()).to.equal(
-        newPauser.publicKey.toBase58(),
+        newPauser.publicKey.toBase58()
       );
       await sss2Sdk
         .updateRoles(authority.publicKey, {
@@ -55,7 +55,7 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
     it("configure_minter sets is_active and daily_mint_quota", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       const minterKp = anchor.web3.Keypair.generate();
@@ -66,10 +66,10 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
       const minterPda = SolanaStablecoin.getMinterPDA(
         mintPda,
         minterKp.publicKey,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const minterConfig = await stablecoinProgram.account.minterConfig.fetch(
-        minterPda,
+        minterPda
       );
       expect(minterConfig.isActive).to.be.true;
       expect(Number(minterConfig.dailyMintQuota)).to.equal(quota);
@@ -78,21 +78,21 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
     it("transfer_authority updates master_authority", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const configPda = SolanaStablecoin.getConfigPDA(
         mintPda,
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       const newAuthority = anchor.web3.Keypair.generate();
       const airdropSig = await connection.requestAirdrop(
         newAuthority.publicKey,
-        anchor.web3.LAMPORTS_PER_SOL,
+        anchor.web3.LAMPORTS_PER_SOL
       );
       const lb = await connection.getLatestBlockhash();
       await connection.confirmTransaction(
         { signature: airdropSig, ...lb },
-        "confirmed",
+        "confirmed"
       );
       await stablecoinProgram.methods
         .transferAuthority(newAuthority.publicKey)
@@ -102,11 +102,10 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
           mint: mintPda,
         } as any)
         .rpc();
-      const configAfter = await stablecoinProgram.account.stablecoinConfig.fetch(
-        configPda,
-      );
+      const configAfter =
+        await stablecoinProgram.account.stablecoinConfig.fetch(configPda);
       expect(configAfter.masterAuthority.toBase58()).to.equal(
-        newAuthority.publicKey.toBase58(),
+        newAuthority.publicKey.toBase58()
       );
       await stablecoinProgram.methods
         .transferAuthority(authority.publicKey)
@@ -122,20 +121,20 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
     it("freeze_account and thaw_account change token account state", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       const user1Ata = getAssociatedTokenAddressSync(
         mintPda,
         user1.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       let acc = await getAccount(
         connection,
         user1Ata,
         "confirmed",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(acc.isFrozen).to.be.false;
       const freezeSig = await sss2Sdk
@@ -146,7 +145,7 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
         connection,
         user1Ata,
         "confirmed",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(acc.isFrozen).to.be.true;
       const thawSig = await sss2Sdk
@@ -157,7 +156,7 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
         connection,
         user1Ata,
         "confirmed",
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       expect(acc.isFrozen).to.be.false;
     });
@@ -165,7 +164,7 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
     it("remove_from_blacklist allows transfer after removal", async () => {
       const mintPda = SolanaStablecoin.getMintPDA(
         "SUSD",
-        stablecoinProgram.programId,
+        stablecoinProgram.programId
       );
       sss2Sdk.mintAddress = mintPda;
       await complianceSdk
@@ -175,31 +174,30 @@ export function registerUnitSuccessSuite(ctx: TestContext): void {
         mintPda,
         user1.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
       const user2Ata = getAssociatedTokenAddressSync(
         mintPda,
         user2.publicKey,
         true,
-        TOKEN_2022_PROGRAM_ID,
+        TOKEN_2022_PROGRAM_ID
       );
-      const transferIx =
-        await createTransferCheckedWithTransferHookInstruction(
-          connection,
-          user1Ata,
-          mintPda,
-          user2Ata,
-          user1.publicKey,
-          BigInt(1),
-          6,
-          [],
-          undefined,
-          TOKEN_2022_PROGRAM_ID,
-        );
+      const transferIx = await createTransferCheckedWithTransferHookInstruction(
+        connection,
+        user1Ata,
+        mintPda,
+        user2Ata,
+        user1.publicKey,
+        BigInt(1),
+        6,
+        [],
+        undefined,
+        TOKEN_2022_PROGRAM_ID
+      );
       const sig = await anchor.web3.sendAndConfirmTransaction(
         connection,
         new anchor.web3.Transaction().add(transferIx),
-        [user1],
+        [user1]
       );
       expect(sig).to.be.a("string");
     });

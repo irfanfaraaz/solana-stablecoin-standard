@@ -151,6 +151,7 @@ Assume `sdk` is a `SolanaStablecoin` with `mintAddress` set.
 - **Pause / Unpause:** `sdk.pause(pauser)`, `sdk.unpause(pauser)`.
 - **Update minter:** `sdk.updateMinter(authority, minterPubkey, active, dailyQuota)`.
 - **Update roles:** `sdk.updateRoles(authority, { burner?, pauser?, blacklister?, seizer? })` — pass a `PublicKey` for each role you want to set; omit or pass `null` to leave unchanged. To revoke a role, set it to the master authority pubkey.
+- **Transfer authority:** The program exposes `transfer_authority(new_authority)`. The current master authority signs; the config’s `master_authority` is updated. No SDK wrapper; use `program.methods.transferAuthority(newAuthorityPubkey).accounts({ admin, config, mint }).rpc()` (see tests/suites/unit-success.ts). Use for atomic handover of the top-level admin.
 
 ## View methods
 

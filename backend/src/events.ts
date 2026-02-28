@@ -23,7 +23,8 @@ let lastSeenSignature: string | null = null;
 
 function getEventsPath(): string {
   if (eventsFilePath) return eventsFilePath;
-  const base = process.env.DATA_DIR || process.env.WORKSPACE_ROOT || process.cwd();
+  const base =
+    process.env.DATA_DIR || process.env.WORKSPACE_ROOT || process.cwd();
   eventsFilePath = path.join(base, DEFAULT_EVENTS_FILE);
   return eventsFilePath;
 }
@@ -67,7 +68,11 @@ export function appendEvent(ev: IndexedEvent): void {
   persistEvents();
 }
 
-export function getEvents(opts: { mint?: string; limit?: number; before?: string }): IndexedEvent[] {
+export function getEvents(opts: {
+  mint?: string;
+  limit?: number;
+  before?: string;
+}): IndexedEvent[] {
   let out = events;
   if (opts.mint) {
     out = out.filter((e) => e.mint === opts.mint);
@@ -81,12 +86,19 @@ export function getEvents(opts: { mint?: string; limit?: number; before?: string
   return out.slice(0, limit);
 }
 
-function inferMintFromTx(accountKeys: string[], logMessages: string[]): string | undefined {
+function inferMintFromTx(
+  accountKeys: string[],
+  logMessages: string[]
+): string | undefined {
   const configPrefix = "config";
   for (const msg of logMessages) {
     const m = msg.match(/Program data: (\w+)/);
     if (m) continue;
-    if (msg.includes("initialize") || msg.includes("mint") || msg.includes("Mint")) {
+    if (
+      msg.includes("initialize") ||
+      msg.includes("mint") ||
+      msg.includes("Mint")
+    ) {
       if (accountKeys.length >= 2) return accountKeys[1];
     }
   }
@@ -117,17 +129,43 @@ export function startIndexer(
             maxSupportedTransactionVersion: 0,
           });
           if (tx?.meta?.logMessages) {
-            const accountKeys = (tx.transaction as any).message?.accountKeys?.map((k: any) =>
-              typeof k === "string" ? k : k.pubkey?.toBase58?.() ?? k.toString()
-            ) ?? [];
-            const keys = accountKeys.length ? accountKeys : (tx.transaction as any).message?.accountKeys ?? [];
-            const keyStrs = Array.isArray(keys) ? keys.map((k: any) => (typeof k === "string" ? k : k?.toBase58?.() ?? String(k))) : [];
+            const accountKeys =
+              (tx.transaction as any).message?.accountKeys?.map((k: any) =>
+                typeof k === "string"
+                  ? k
+                  : k.pubkey?.toBase58?.() ?? k.toString()
+              ) ?? [];
+            const keys = accountKeys.length
+              ? accountKeys
+              : (tx.transaction as any).message?.accountKeys ?? [];
+            const keyStrs = Array.isArray(keys)
+              ? keys.map((k: any) =>
+                  typeof k === "string" ? k : k?.toBase58?.() ?? String(k)
+                )
+              : [];
             mint = inferMintFromTx(keyStrs, tx.meta.logMessages);
-            if (tx.meta.logMessages.some((l) => l.includes("Instruction: Mint"))) eventType = "mint";
-            else if (tx.meta.logMessages.some((l) => l.includes("Instruction: Burn"))) eventType = "burn";
-            else if (tx.meta.logMessages.some((l) => l.includes("Instruction: AddToBlacklist"))) eventType = "blacklist_add";
-            else if (tx.meta.logMessages.some((l) => l.includes("Instruction: RemoveFromBlacklist"))) eventType = "blacklist_remove";
-            else if (tx.meta.logMessages.some((l) => l.includes("Seize"))) eventType = "seize";
+            if (
+              tx.meta.logMessages.some((l) => l.includes("Instruction: Mint"))
+            )
+              eventType = "mint";
+            else if (
+              tx.meta.logMessages.some((l) => l.includes("Instruction: Burn"))
+            )
+              eventType = "burn";
+            else if (
+              tx.meta.logMessages.some((l) =>
+                l.includes("Instruction: AddToBlacklist")
+              )
+            )
+              eventType = "blacklist_add";
+            else if (
+              tx.meta.logMessages.some((l) =>
+                l.includes("Instruction: RemoveFromBlacklist")
+              )
+            )
+              eventType = "blacklist_remove";
+            else if (tx.meta.logMessages.some((l) => l.includes("Seize")))
+              eventType = "seize";
           }
         } catch (_) {}
         const ev: IndexedEvent = {
@@ -140,7 +178,8 @@ export function startIndexer(
         appendEvent(ev);
         lastSeenSignature = s.signature;
       }
-      if (sigs.length > 0 && !lastSeenSignature) lastSeenSignature = sigs[0].signature;
+      if (sigs.length > 0 && !lastSeenSignature)
+        lastSeenSignature = sigs[0].signature;
     } catch (e) {
       console.error("indexer poll error", e);
     }

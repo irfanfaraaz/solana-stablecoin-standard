@@ -66,7 +66,8 @@ Existing configs deployed before this layout may have empty name/symbol/uri when
 
 ## Security model
 
-- **Roles:** Single PDA holds burner, pauser, blacklister, seizer. Update via `update_roles` (master authority).
+- **Roles:** One **RoleAccount** PDA per mint holds the four operational roles: **burner**, **pauser**, **blacklister**, **seizer**. The **master authority** (stored in `StablecoinConfig`) is separate and is the only identity that can call `update_roles` to assign or change these role pubkeys. No separate “admin” PDA — the master authority is the top-level admin. This keeps the model simple while still separating duties (e.g. a dedicated pauser key, a dedicated blacklister key).
+- **Update roles:** Master authority calls `update_roles(burner?, pauser?, blacklister?, seizer?)`; omit or pass `null` for any role to leave it unchanged. To revoke a role, set it to the master authority pubkey.
 - **Feature gating:** Compliance instructions (blacklist, seize) fail with `ComplianceNotEnabled` if `enable_transfer_hook` is false.
 - **Pause:** When `is_paused` is true, mint/burn/freeze/thaw and other mutating instructions are blocked.
 - **Transfer hook:** Only runs when mint has transfer-hook extension; hook validates blacklist using accounts provided by extra-account-metas.
