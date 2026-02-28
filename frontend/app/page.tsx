@@ -11,6 +11,7 @@ import { BlacklistSection } from "./components/BlacklistSection";
 import { AllowlistSection } from "./components/AllowlistSection";
 import { SeizeSection } from "./components/SeizeSection";
 import { AdminMintBurn } from "./components/AdminMintBurn";
+import { OracleMintSection } from "./components/OracleMintSection";
 import { ConfigureMinter } from "./components/ConfigureMinter";
 import { AdminFreezePause } from "./components/AdminFreezePause";
 import { AuditSection } from "./components/AuditSection";
@@ -141,6 +142,7 @@ function AdminPanel() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <ConfigureMinter />
         <AdminMintBurn />
+        <OracleMintSection />
         <AdminFreezePause />
       </div>
     </div>

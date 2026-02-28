@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { PublicKey } from "@solana/web3.js";
+import type { Program } from "@coral-xyz/anchor";
 import type { SolanaStablecoin } from "@stbr/sss-token";
 import type { StablecoinConfigAccount, RoleAccountData } from "@stbr/sss-token";
 import { createSdkContext } from "./sdk-browser";
@@ -11,6 +12,8 @@ type UseStablecoinSdkResult = {
   config: StablecoinConfigAccount | null;
   roles: RoleAccountData | null;
   totalSupply: bigint | null;
+  /** Oracle program (when oracle IDL is present). */
+  oracleProgram: Program | null;
   loading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
@@ -28,6 +31,7 @@ export function useStablecoinSdk(
   const [config, setConfig] = useState<StablecoinConfigAccount | null>(null);
   const [roles, setRoles] = useState<RoleAccountData | null>(null);
   const [totalSupply, setTotalSupply] = useState<bigint | null>(null);
+  const [oracleProgram, setOracleProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -48,6 +52,7 @@ export function useStablecoinSdk(
       setConfig(null);
       setRoles(null);
       setTotalSupply(null);
+      setOracleProgram(null);
       setError(null);
       return;
     }
@@ -58,7 +63,9 @@ export function useStablecoinSdk(
       const {
         stablecoinProgram,
         transferHookProgram,
+        oracleProgram: oracleProg,
       } = await createSdkContext(new PublicKey(walletKeyStr));
+      setOracleProgram(oracleProg ?? null);
       const instance = SolanaStablecoin.load(
         stablecoinProgram as any,
         mintPubkey,
@@ -79,6 +86,7 @@ export function useStablecoinSdk(
       setConfig(null);
       setRoles(null);
       setTotalSupply(null);
+      setOracleProgram(null);
     } finally {
       setLoading(false);
     }
@@ -88,5 +96,5 @@ export function useStablecoinSdk(
     load();
   }, [load]);
 
-  return { sdk, config, roles, totalSupply, loading, error, refresh: load };
+  return { sdk, config, roles, totalSupply, oracleProgram, loading, error, refresh: load };
 }

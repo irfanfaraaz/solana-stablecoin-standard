@@ -158,3 +158,37 @@ In production, you would:
 - Use production Switchboard feeds and queues.
 - Run the same flow on mainnet-beta.
 
+Switchboard on-demand is **pay-per-use**: ~0.00015 SOL per quote when the
+transaction is sent. No subscription or upfront feed funding.
+
+---
+
+## Browser flow (user pays)
+
+For a browser flow where the **user** signs and pays (no backend key):
+
+1. Frontend gets Switchboard update + verify instructions from
+   `@switchboard-xyz/on-demand` (queue + feed ID).
+2. Ensure the **Ed25519 verify** instruction is at **index 1** in the tx
+   (reorder if the SDK returns them differently).
+3. Build tx: `[Switchboard ix 0, Switchboard ix 1, oracle compute_mint_amount]`,
+   then simulate and read return data (u64 token amount), or include a mint
+   instruction in a second step using that amount.
+4. User signs and sends; user pays tx fees + quote cost.
+
+In the example frontend, set `NEXT_PUBLIC_SWITCHBOARD_QUEUE` and
+`NEXT_PUBLIC_SWITCHBOARD_FEED_HASH` in `.env` (see `frontend/.env.example`).
+
+**Config checklist:**
+
+| Item | Where / value |
+|------|----------------|
+| Oracle program ID | Deployed program (e.g. devnet `4xvrXEAm7HKMdgcNehGth4QvRVArJHrfhnrC4gWZfvVu`). |
+| Switchboard queue | Queue pubkey for the feed ([Switchboard Explorer](https://ondemand.switchboard.xyz/)). |
+| Feed ID / feed hash | 32-byte feed identifier for the desired price (e.g. EUR/USD). |
+| Sysvars | `SYSVAR_SLOT_HASHES_PUBKEY`, `SYSVAR_INSTRUCTIONS_PUBKEY`. |
+| Private key | None in frontend; user signs with wallet. |
+
+See `docs/plans/2025-02-27-browser-oracle-mint-design.md` for full design and
+implementation notes.
+
