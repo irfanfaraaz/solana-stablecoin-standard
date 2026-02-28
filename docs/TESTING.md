@@ -47,16 +47,16 @@ flowchart TB
 
 Tests are modular: **`tests/stablecoin.test.ts`** is the runner (shared context + airdrop); **`tests/context.ts`** defines the test context; **`tests/suites/*.ts`** each register one describe block.
 
-| Describe block | What it covers |
-|----------------|----------------|
-| **SSS-1: Vanilla Stablecoin Operations** | SSS-2 preset: init, transfer-hook init, mint, transfer with hook, blacklist add, blocked transfer, seize, thaw, pause/unpause |
-| **SSS-1: integration (mint → transfer → freeze → thaw)** | SSS-1 preset: init (no hook), mint, plain SPL transfer, freeze, thaw |
-| **Preset config tests** | SSS-1/SSS-2 config flags (enableTransferHook, enablePermanentDelegate) via getConfig() |
-| **SSS-3: Allowlist (POC)** | Confidential + allowlist preset, hook extra accounts, add/remove allowlist, transfer blocked then allowed; getConfidential / fundConfidential allowlist gate, deposit and applyPending instruction building |
-| **Unit: instruction error cases** | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive, InvalidAmount, Paused (mint when paused) |
-| **Unit: instruction success cases** | update_roles, configure_minter, transfer_authority, freeze/thaw, remove_from_blacklist |
-| **SDK unit tests** | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load, buildMintInstructions; PDA derivation (getMintPDA, getConfigPDA, getRoleAccountPDA, getMinterPDA, blacklist/allowlist seeds); Presets (SSS_1/SSS_2/SSS_3 shape) |
-| **Oracle module** | compute_mint_amount fails without Switchboard instruction (smoke) |
+| Describe block                                           | What it covers                                                                                                                                                                                                              |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SSS-1: Vanilla Stablecoin Operations**                 | SSS-2 preset: init, transfer-hook init, mint, transfer with hook, blacklist add, blocked transfer, seize, thaw, pause/unpause                                                                                               |
+| **SSS-1: integration (mint → transfer → freeze → thaw)** | SSS-1 preset: init (no hook), mint, plain SPL transfer, freeze, thaw                                                                                                                                                        |
+| **Preset config tests**                                  | SSS-1/SSS-2 config flags (enableTransferHook, enablePermanentDelegate) via getConfig()                                                                                                                                      |
+| **SSS-3: Allowlist (POC)**                               | Confidential + allowlist preset, hook extra accounts, add/remove allowlist, transfer blocked then allowed; getConfidential / fundConfidential allowlist gate, deposit and applyPending instruction building                 |
+| **Unit: instruction error cases**                        | ComplianceNotEnabled, Unauthorized (burn), QuotaExceeded, MinterInactive, InvalidAmount, Paused (mint when paused)                                                                                                          |
+| **Unit: instruction success cases**                      | update_roles, configure_minter, transfer_authority, freeze/thaw, remove_from_blacklist                                                                                                                                      |
+| **SDK unit tests**                                       | getTotalSupply, getConfig, getRoles, SolanaStablecoin.load, buildMintInstructions; PDA derivation (getMintPDA, getConfigPDA, getRoleAccountPDA, getMinterPDA, blacklist/allowlist seeds); Presets (SSS_1/SSS_2/SSS_3 shape) |
+| **Oracle module**                                        | compute_mint_amount fails without Switchboard instruction (smoke)                                                                                                                                                           |
 
 ## Trident fuzz
 

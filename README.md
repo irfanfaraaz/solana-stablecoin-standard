@@ -1,6 +1,5 @@
 # Solana Stablecoin Standard (SSS)
 
-[![Build](https://github.com/OWNER/solana-stablecoin-standard/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/solana-stablecoin-standard/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-53%20passing-brightgreen)](docs/TESTING.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
