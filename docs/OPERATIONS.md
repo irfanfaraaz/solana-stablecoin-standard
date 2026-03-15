@@ -110,13 +110,15 @@ Output: `mint`, `configPda`, `signature`; for SSS-2 also `transferHookInitSignat
 | `blacklist remove <address>` | Remove from blacklist | `yarn cli blacklist remove <PUBKEY> -m <MINT>` |
 | `seize <from> -t <treasury>` | Seize to treasury | `yarn cli seize <FROM_ATA> -m <MINT> -t <TREASURY> [-a amount]` |
 
+If **add** fails with “already initialized” (e.g. re-adding after a remove), the CLI automatically retries with the program’s **update** instruction (`update_blacklist_entry` / `update_allowlist_entry` / `update_minter`). You can also call these directly via the SDK (see [SDK.md](SDK.md)).
+
 ## Management
 
 | Command | Description | Example |
 |---------|-------------|---------|
 | `minters list` | List minters (info) | `yarn cli minters -m <MINT> list` |
-| `minters add <pubkey>` | Add minter | `yarn cli minters -m <MINT> add <PUBKEY> [-q quota]` |
-| `minters remove <pubkey>` | Deactivate minter | `yarn cli minters -m <MINT> remove <PUBKEY>` |
+| `minters add <pubkey>` | Add minter (or update quota if already added) | `yarn cli minters -m <MINT> add <PUBKEY> [-q quota]` |
+| `minters remove <pubkey>` | Deactivate minter (sets inactive, quota 0) | `yarn cli minters -m <MINT> remove <PUBKEY>` |
 | `holders` | Stub (use RPC/getTokenLargestAccounts) | — |
 | `audit-log` | Stub (requires indexer) | — |
 

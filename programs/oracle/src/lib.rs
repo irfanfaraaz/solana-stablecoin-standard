@@ -7,7 +7,7 @@
 #![allow(deprecated)]
 
 use anchor_lang::prelude::*;
-use switchboard_on_demand::prelude::rust_decimal::prelude::ToPrimitive;
+use switchboard_on_demand::prelude::rust_decimal::prelude::{Decimal, ToPrimitive};
 use switchboard_on_demand::QuoteVerifier;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
@@ -73,6 +73,7 @@ pub struct ReadQuote<'info> {
 }
 
 /// Client must send tx with instructions: [Switchboard update ix at 0, Ed25519 verify ix at 1, this program ix at 2].
+/// Uses fixed-point Decimal math only (no f64) for financial safety.
 fn compute_amount_impl(ctx: Context<ReadQuote>, peg_amount: u64, token_decimals: u8) -> Result<()> {
     require!(peg_amount > 0, OracleError::ZeroPrice);
     require!(token_decimals <= 18, OracleError::Overflow);
@@ -90,24 +91,28 @@ fn compute_amount_impl(ctx: Context<ReadQuote>, peg_amount: u64, token_decimals:
     let feeds = quote.feeds();
     let feed = feeds.first().ok_or(OracleError::InvalidFeed)?;
     let price_decimal = feed.value();
-    let price = price_decimal.to_f64().ok_or(OracleError::ZeroPrice)?;
-    if price <= 0.0 {
+    if price_decimal.is_zero() {
         return err!(OracleError::ZeroPrice);
     }
 
-    // token_amount = peg_amount * 10^token_decimals / price (peg_amount in smallest peg units)
-    let scale = 10f64.powi(token_decimals as i32);
-    let amount_f = (peg_amount as f64) * scale / price;
-    if amount_f < 0.0 || amount_f > u64::MAX as f64 {
-        return err!(OracleError::Overflow);
+    // token_amount = peg_amount * 10^token_decimals / price (all in Decimal, no f64)
+    let peg = Decimal::from(peg_amount);
+    let ten = Decimal::from(10u32);
+    let mut scale = Decimal::from(1u32);
+    for _ in 0..token_decimals {
+        scale = scale.checked_mul(ten).ok_or(OracleError::Overflow)?;
     }
-    let token_amount = amount_f as u64;
+    let numerator = peg.checked_mul(scale).ok_or(OracleError::Overflow)?;
+    let token_amount_decimal = numerator
+        .checked_div(price_decimal)
+        .ok_or(OracleError::Overflow)?;
+    let token_amount: u64 = token_amount_decimal.to_u64().ok_or(OracleError::Overflow)?;
 
     anchor_lang::solana_program::program::set_return_data(&token_amount.to_le_bytes());
     msg!(
         "compute_amount: peg_amount={} price={} token_amount={}",
         peg_amount,
-        price,
+        price_decimal,
         token_amount
     );
     Ok(())

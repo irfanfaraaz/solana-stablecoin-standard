@@ -149,7 +149,8 @@ Assume `sdk` is a `SolanaStablecoin` with `mintAddress` set.
 - **Burn:** `sdk.burn(authority, from, amount)`.
 - **Freeze / Thaw:** `sdk.freeze(pauser, accountToFreeze)`, `sdk.thaw(pauser, accountToThaw)`.
 - **Pause / Unpause:** `sdk.pause(pauser)`, `sdk.unpause(pauser)`.
-- **Update minter:** `sdk.updateMinter(authority, minterPubkey, active, dailyQuota)`.
+- **Add minter (first time):** `sdk.addMinter(authority, minterPubkey, active, dailyQuota)` — creates the minter config account. If the minter already exists (e.g. **AlreadyInitialized**), use **update minter quota** instead.
+- **Update minter quota (existing minter):** `sdk.updateMinterQuota(authority, minterPubkey, active, dailyQuota)` — use when the minter account already exists (e.g. after `minters remove` you can re-enable with `updateMinterQuota(..., true, quota)`).
 - **Update roles:** `sdk.updateRoles(authority, { burner?, pauser?, blacklister?, seizer? })` — pass a `PublicKey` for each role you want to set; omit or pass `null` to leave unchanged. To revoke a role, set it to the master authority pubkey.
 - **Transfer authority:** The program exposes `transfer_authority(new_authority)`. The current master authority signs; the config’s `master_authority` is updated. No SDK wrapper; use `program.methods.transferAuthority(newAuthorityPubkey).accounts({ admin, config, mint }).rpc()` (see tests/suites/unit-success.ts). Use for atomic handover of the top-level admin.
 
@@ -172,6 +173,12 @@ compliance.addToBlacklist(blacklister, address); // optional 3rd arg: reason (au
 compliance.removeFromBlacklist(blacklister, address);
 compliance.seize(seizer, fromAccount, treasury, amount);
 ```
+
+**Add vs update (blacklist / allowlist / minter):** The program uses **init** (no re-initialization). If **add** fails with **AlreadyInitialized** (e.g. re-adding after a remove, or adding a minter that already exists), use the corresponding update method:
+
+- **Blacklist:** `compliance.updateBlacklistEntry(blacklister, account, isBlacklisted)` — set `isBlacklisted` to `true` to re-blacklist after remove.
+- **Allowlist:** `sdk.updateAllowlistEntry(authority, wallet, isAllowed)` — set `isAllowed` to `true` to re-allow after remove.
+- **Minter:** `sdk.updateMinterQuota(authority, minterPubkey, active, dailyQuota)` — use for existing minters (e.g. re-enable or change quota). Use `sdk.addMinter(...)` only for first-time add.
 
 ## Oracle helper (optional)
 

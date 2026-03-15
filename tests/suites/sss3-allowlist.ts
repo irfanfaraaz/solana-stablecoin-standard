@@ -15,6 +15,28 @@ import {
 } from "../../sdk/src";
 import type { TestContext } from "../context";
 
+/** Add to allowlist; if entry already exists (e.g. after remove), use update_allowlist_entry. */
+async function addOrUpdateAllowlist(
+  sdk: SolanaStablecoin,
+  authority: anchor.web3.PublicKey,
+  wallet: anchor.web3.PublicKey
+): Promise<string> {
+  try {
+    const tx = await sdk.addToAllowlist(authority, wallet);
+    return await tx.rpc();
+  } catch (e) {
+    const msg = String(e?.message ?? e);
+    if (
+      /already in use|AlreadyInitialized|0x1775|6005/i.test(msg) ||
+      msg.includes("already initialized")
+    ) {
+      const tx = sdk.updateAllowlistEntry(authority, wallet, true);
+      return await tx.rpc();
+    }
+    throw e;
+  }
+}
+
 export function registerSSS3AllowlistSuite(ctx: TestContext): void {
   const {
     provider,
@@ -133,16 +155,20 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
     });
 
     it("transfer fails when destination is not on allowlist, then succeeds after adding", async () => {
-      const addUser1Sig = await sss3Sdk
-        .addToAllowlist(authority.publicKey, user1.publicKey)
-        .then((tx) => tx.rpc());
+      const addUser1Sig = await addOrUpdateAllowlist(
+        sss3Sdk,
+        authority.publicKey,
+        user1.publicKey
+      );
       await connection.confirmTransaction(
         { signature: addUser1Sig, ...(await connection.getLatestBlockhash()) },
         "confirmed"
       );
-      const addUser2Sig = await sss3Sdk
-        .addToAllowlist(authority.publicKey, user2.publicKey)
-        .then((tx) => tx.rpc());
+      const addUser2Sig = await addOrUpdateAllowlist(
+        sss3Sdk,
+        authority.publicKey,
+        user2.publicKey
+      );
       await connection.confirmTransaction(
         { signature: addUser2Sig, ...(await connection.getLatestBlockhash()) },
         "confirmed"
@@ -187,7 +213,7 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       );
       await provider.sendAndConfirm(createAtaTx);
       await sss3Sdk
-        .updateMinter(authority.publicKey, authority.publicKey, true, 1e12)
+        .addMinter(authority.publicKey, authority.publicKey, true, 1e12)
         .then((tx) => tx.rpc());
       const mintSig = await sss3Sdk
         .mint(authority.publicKey, user1.publicKey, 100_000)
@@ -245,9 +271,11 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
       );
       expect(Number(user1AfterBlocked.amount)).to.equal(100_000);
       expect(Number(user2AfterBlocked.amount)).to.equal(0);
-      const add2Sig = await sss3Sdk
-        .addToAllowlist(authority.publicKey, user2.publicKey)
-        .then((tx) => tx.rpc());
+      const add2Sig = await addOrUpdateAllowlist(
+        sss3Sdk,
+        authority.publicKey,
+        user2.publicKey
+      );
       await connection.confirmTransaction(
         { signature: add2Sig, ...(await connection.getLatestBlockhash()) },
         "confirmed"
@@ -309,9 +337,11 @@ export function registerSSS3AllowlistSuite(ctx: TestContext): void {
     });
 
     it("fundConfidential builds deposit instruction when wallet is on allowlist", async () => {
-      await sss3Sdk
-        .addToAllowlist(authority.publicKey, user1.publicKey)
-        .then((tx) => tx.rpc());
+      await addOrUpdateAllowlist(
+        sss3Sdk,
+        authority.publicKey,
+        user1.publicKey
+      );
       const confidential = sss3Sdk.getConfidential();
       const ix = await confidential.fundConfidential(
         user1.publicKey,

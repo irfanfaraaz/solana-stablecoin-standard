@@ -143,10 +143,6 @@ pub mod transfer_hook {
     }
 }
 
-/// Byte offset of `is_allowed` in AllowlistEntry. Must match state::AllowlistEntry layout:
-/// 8 (discriminator) + 1 (bump) + 32 (wallet Pubkey) = 41.
-const ALLOWLIST_IS_ALLOWED_OFFSET: usize = 8 + 1 + 32;
-
 pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
     if accounts.len() < 8 {
         return Err(ProgramError::NotEnoughAccountKeys.into());
@@ -166,7 +162,7 @@ pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
         return Ok(());
     }
 
-    // Blacklist: indices 6 and 7 (SSS-2). With allowlist (SSS-3): still 6 and 7, then 8=config, 9=source_allowlist, 10=dest_allowlist.
+    // Blacklist: indices 6 and 7. Deserialize BlacklistEntry from stablecoin state (no hardcoded offsets).
     let (source_blacklist_ix, dest_blacklist_ix) = (6, 7);
     for (label, acc) in [
         ("source", &accounts[source_blacklist_ix]),
@@ -174,9 +170,12 @@ pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
     ] {
         if !acc.data_is_empty() {
             let data = acc.try_borrow_data()?;
-            if data.len() >= 42 && data[41] != 0 {
-                msg!("Execute - Blocked {} account: {}", label, acc.key());
-                return Err(TransferHookError::Blacklisted.into());
+            let mut slice: &[u8] = data.as_ref();
+            if let Ok(entry) = stablecoin::state::BlacklistEntry::try_deserialize(&mut slice) {
+                if entry.is_blacklisted {
+                    msg!("Execute - Blocked {} account: {}", label, acc.key());
+                    return Err(TransferHookError::Blacklisted.into());
+                }
             }
         }
     }
@@ -200,14 +199,16 @@ pub fn handle_execute(accounts: &[AccountInfo], _amount: u64) -> Result<()> {
             let config = stablecoin::state::StablecoinConfig::try_deserialize(&mut config_data_slice)
                 .map_err(|_| ProgramError::InvalidAccountData)?;
             if config.enable_allowlist {
-                // If enable_allowlist is true: require both source and destination entries to be allowed.
                 for (label, acc) in [("source", source_allowlist_acc), ("destination", dest_allowlist_acc)] {
                     if acc.data_is_empty() {
                         msg!("Execute - Allowlist required but {} not on allowlist", label);
                         return Err(TransferHookError::NotOnAllowlist.into());
                     }
                     let data = acc.try_borrow_data()?;
-                    if data.len() <= ALLOWLIST_IS_ALLOWED_OFFSET || data[ALLOWLIST_IS_ALLOWED_OFFSET] == 0 {
+                    let mut slice: &[u8] = data.as_ref();
+                    let entry = stablecoin::state::AllowlistEntry::try_deserialize(&mut slice)
+                        .map_err(|_| ProgramError::InvalidAccountData)?;
+                    if !entry.is_allowed {
                         msg!("Execute - {} wallet not allowed", label);
                         return Err(TransferHookError::NotOnAllowlist.into());
                     }

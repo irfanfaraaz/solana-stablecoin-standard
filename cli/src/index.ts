@@ -230,7 +230,7 @@ program
         config.enableAllowlist ?? false
       );
       const hookSig = await hookTx.rpc();
-      const minterTx = await sdk.updateMinter(
+      const minterTx = await sdk.addMinter(
         keypair.publicKey,
         keypair.publicKey,
         true,
@@ -251,7 +251,7 @@ program
         (program.opts() as any).json
       );
     } else {
-      const minterTx = await sdk.updateMinter(
+      const minterTx = await sdk.addMinter(
         keypair.publicKey,
         keypair.publicKey,
         true,
@@ -292,6 +292,17 @@ function isMinterInactiveError(err: unknown): boolean {
     /custom program error:\s*0x1774\b/i.test(msg) ||
     /0x1774/.test(msg) ||
     /6004/.test(msg)
+  );
+}
+
+function isAlreadyInitializedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    /already initialized/i.test(msg) ||
+    /AlreadyInitialized/i.test(msg) ||
+    /custom program error:\s*0x1775\b/i.test(msg) ||
+    /0x1775/.test(msg) ||
+    /6005/.test(msg)
   );
 }
 
@@ -686,16 +697,32 @@ program
           (transferHookProgram || undefined) as any
         );
         const compliance = new SSSComplianceModule(sdk);
-        const tx = await compliance.addToBlacklist(
+        const accountPubkey = new PublicKey(address);
+        let tx = await compliance.addToBlacklist(
           keypair.publicKey,
-          new PublicKey(address),
+          accountPubkey,
           opts.reason
         );
-        const sig = await tx.rpc();
-        output(
-          { signature: sig, reason: opts.reason },
-          (program.opts() as any).json
-        );
+        try {
+          const sig = await tx.rpc();
+          output(
+            { signature: sig, reason: opts.reason },
+            (program.opts() as any).json
+          );
+        } catch (e) {
+          if (isAlreadyInitializedError(e)) {
+            tx = compliance.updateBlacklistEntry(
+              keypair.publicKey,
+              accountPubkey,
+              true
+            );
+            const sig = await tx.rpc();
+            output(
+              { signature: sig, updated: true, reason: opts.reason },
+              (program.opts() as any).json
+            );
+          } else throw e;
+        }
       })
   )
   .addCommand(
@@ -746,15 +773,31 @@ program
           mint,
           (transferHookProgram || undefined) as any
         );
-        const tx = await sdk.addToAllowlist(
+        const walletPubkey = new PublicKey(walletAddress);
+        let tx = await sdk.addToAllowlist(
           keypair.publicKey,
-          new PublicKey(walletAddress)
+          walletPubkey
         );
-        const sig = await tx.rpc();
-        output(
-          { signature: sig, wallet: walletAddress },
-          (program.opts() as any).json
-        );
+        try {
+          const sig = await tx.rpc();
+          output(
+            { signature: sig, wallet: walletAddress },
+            (program.opts() as any).json
+          );
+        } catch (e) {
+          if (isAlreadyInitializedError(e)) {
+            tx = sdk.updateAllowlistEntry(
+              keypair.publicKey,
+              walletPubkey,
+              true
+            );
+            const sig = await tx.rpc();
+            output(
+              { signature: sig, updated: true, wallet: walletAddress },
+              (program.opts() as any).json
+            );
+          } else throw e;
+        }
       })
   )
   .addCommand(
@@ -858,17 +901,34 @@ mintersCmd
       new PublicKey(mint),
       (transferHookProgram || undefined) as any
     );
-    const tx = await sdk.updateMinter(
+    const minterKey = new PublicKey(minterPubkey);
+    let tx = await sdk.addMinter(
       keypair.publicKey,
-      new PublicKey(minterPubkey),
+      minterKey,
       true,
       opts.quota
     );
-    const sig = await tx.rpc();
-    output(
-      { signature: sig, minter: minterPubkey, quota: opts.quota },
-      (program.opts() as any).json
-    );
+    try {
+      const sig = await tx.rpc();
+      output(
+        { signature: sig, minter: minterPubkey, quota: opts.quota },
+        (program.opts() as any).json
+      );
+    } catch (e) {
+      if (isAlreadyInitializedError(e)) {
+        tx = sdk.updateMinterQuota(
+          keypair.publicKey,
+          minterKey,
+          true,
+          opts.quota
+        );
+        const sig = await tx.rpc();
+        output(
+          { signature: sig, updated: true, minter: minterPubkey, quota: opts.quota },
+          (program.opts() as any).json
+        );
+      } else throw e;
+    }
   });
 mintersCmd
   .command("remove <minter_pubkey>")
@@ -888,7 +948,7 @@ mintersCmd
       new PublicKey(mint),
       (transferHookProgram || undefined) as any
     );
-    const tx = await sdk.updateMinter(
+    const tx = sdk.updateMinterQuota(
       keypair.publicKey,
       new PublicKey(minterPubkey),
       false,

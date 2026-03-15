@@ -5,7 +5,7 @@ use anchor_spl::token_interface::{
 };
 
 #[derive(Accounts)]
-pub struct ManageBlacklist<'info> {
+pub struct AddToBlacklist<'info> {
     #[account(mut)]
     pub blacklister: Signer<'info>,
 
@@ -26,7 +26,7 @@ pub struct ManageBlacklist<'info> {
     pub target_account: UncheckedAccount<'info>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = blacklister,
         space = 8 + BlacklistEntry::INIT_SPACE,
         seeds = [BlacklistEntry::SEED_PREFIX, mint.key().as_ref(), target_account.key().as_ref()],
@@ -35,6 +35,68 @@ pub struct ManageBlacklist<'info> {
     pub blacklist_entry: Account<'info, BlacklistEntry>,
 
     pub system_program: Program<'info, System>,
+    pub mint: InterfaceAccount<'info, Mint>,
+}
+
+#[derive(Accounts)]
+pub struct RemoveFromBlacklist<'info> {
+    #[account(mut)]
+    pub blacklister: Signer<'info>,
+
+    #[account(
+        seeds = [StablecoinConfig::SEED_PREFIX, mint.key().as_ref()],
+        bump = config.bump
+    )]
+    pub config: Account<'info, StablecoinConfig>,
+
+    #[account(
+        seeds = [RoleAccount::SEED_PREFIX, mint.key().as_ref()],
+        bump = roles.bump,
+        constraint = roles.blacklister == blacklister.key() || config.master_authority == blacklister.key() @ StablecoinError::Unauthorized
+    )]
+    pub roles: Account<'info, RoleAccount>,
+
+    /// CHECK: The account being removed from blacklist. We only care about its pubkey.
+    pub target_account: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [BlacklistEntry::SEED_PREFIX, mint.key().as_ref(), target_account.key().as_ref()],
+        bump = blacklist_entry.bump
+    )]
+    pub blacklist_entry: Account<'info, BlacklistEntry>,
+
+    pub mint: InterfaceAccount<'info, Mint>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateBlacklistEntry<'info> {
+    #[account(mut)]
+    pub blacklister: Signer<'info>,
+
+    #[account(
+        seeds = [StablecoinConfig::SEED_PREFIX, mint.key().as_ref()],
+        bump = config.bump
+    )]
+    pub config: Account<'info, StablecoinConfig>,
+
+    #[account(
+        seeds = [RoleAccount::SEED_PREFIX, mint.key().as_ref()],
+        bump = roles.bump,
+        constraint = roles.blacklister == blacklister.key() || config.master_authority == blacklister.key() @ StablecoinError::Unauthorized
+    )]
+    pub roles: Account<'info, RoleAccount>,
+
+    /// CHECK: The account whose blacklist status is being updated.
+    pub target_account: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [BlacklistEntry::SEED_PREFIX, mint.key().as_ref(), target_account.key().as_ref()],
+        bump = blacklist_entry.bump
+    )]
+    pub blacklist_entry: Account<'info, BlacklistEntry>,
+
     pub mint: InterfaceAccount<'info, Mint>,
 }
 
@@ -126,7 +188,7 @@ pub struct Seize<'info> {
     pub dest_allowlist: UncheckedAccount<'info>,
 }
 
-pub fn handle_add_to_blacklist(ctx: Context<ManageBlacklist>) -> Result<()> {
+pub fn handle_add_to_blacklist(ctx: Context<AddToBlacklist>) -> Result<()> {
     require!(
         ctx.accounts.config.enable_transfer_hook,
         StablecoinError::ComplianceNotEnabled
@@ -139,16 +201,27 @@ pub fn handle_add_to_blacklist(ctx: Context<ManageBlacklist>) -> Result<()> {
     Ok(())
 }
 
-pub fn handle_remove_from_blacklist(ctx: Context<ManageBlacklist>) -> Result<()> {
+pub fn handle_remove_from_blacklist(ctx: Context<RemoveFromBlacklist>) -> Result<()> {
     require!(
         ctx.accounts.config.enable_transfer_hook,
         StablecoinError::ComplianceNotEnabled
     );
 
     let entry = &mut ctx.accounts.blacklist_entry;
-    entry.bump = ctx.bumps.blacklist_entry;
     entry.account = ctx.accounts.target_account.key();
     entry.is_blacklisted = false;
+    Ok(())
+}
+
+pub fn handle_update_blacklist_entry(ctx: Context<UpdateBlacklistEntry>, is_blacklisted: bool) -> Result<()> {
+    require!(
+        ctx.accounts.config.enable_transfer_hook,
+        StablecoinError::ComplianceNotEnabled
+    );
+
+    let entry = &mut ctx.accounts.blacklist_entry;
+    entry.account = ctx.accounts.target_account.key();
+    entry.is_blacklisted = is_blacklisted;
     Ok(())
 }
 

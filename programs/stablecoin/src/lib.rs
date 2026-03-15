@@ -83,6 +83,14 @@ pub mod stablecoin {
         handle_configure_minter(ctx, is_active, daily_mint_quota)
     }
 
+    pub fn update_minter(
+        ctx: Context<UpdateMinter>,
+        is_active: bool,
+        daily_mint_quota: u64,
+    ) -> Result<()> {
+        handle_update_minter(ctx, is_active, daily_mint_quota)
+    }
+
     pub fn freeze_account(ctx: Context<FreezeThaw>) -> Result<()> {
         handle_freeze_account(ctx)
     }
@@ -91,23 +99,31 @@ pub mod stablecoin {
         handle_thaw_account(ctx)
     }
 
-    pub fn add_to_blacklist(ctx: Context<ManageBlacklist>) -> Result<()> {
+    pub fn add_to_blacklist(ctx: Context<AddToBlacklist>) -> Result<()> {
         handle_add_to_blacklist(ctx)
     }
 
-    pub fn remove_from_blacklist(ctx: Context<ManageBlacklist>) -> Result<()> {
+    pub fn remove_from_blacklist(ctx: Context<RemoveFromBlacklist>) -> Result<()> {
         handle_remove_from_blacklist(ctx)
+    }
+
+    pub fn update_blacklist_entry(ctx: Context<UpdateBlacklistEntry>, is_blacklisted: bool) -> Result<()> {
+        handle_update_blacklist_entry(ctx, is_blacklisted)
     }
 
     pub fn seize(ctx: Context<Seize>, amount: u64) -> Result<()> {
         handle_seize(ctx, amount)
     }
 
-    pub fn add_to_allowlist(ctx: Context<ManageAllowlist>) -> Result<()> {
+    pub fn add_to_allowlist(ctx: Context<AddToAllowlist>) -> Result<()> {
         handle_add_to_allowlist(ctx)
     }
 
-    pub fn remove_from_allowlist(ctx: Context<ManageAllowlist>) -> Result<()> {
+    pub fn remove_from_allowlist(ctx: Context<RemoveFromAllowlist>) -> Result<()> {
         handle_remove_from_allowlist(ctx)
+    }
+
+    pub fn update_allowlist_entry(ctx: Context<UpdateAllowlistEntry>, is_allowed: bool) -> Result<()> {
+        handle_update_allowlist_entry(ctx, is_allowed)
     }
 }

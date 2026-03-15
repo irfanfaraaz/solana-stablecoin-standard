@@ -418,8 +418,36 @@ export class SolanaStablecoin {
       mint,
       wallet,
       allowlistEntry,
-      systemProgram: SystemProgram.programId,
     } as any);
+  }
+
+  /**
+   * Update allowlist entry (e.g. set is_allowed = true after remove).
+   * Use when addToAllowlist fails with AlreadyInitialized.
+   */
+  updateAllowlistEntry(
+    authority: PublicKey,
+    wallet: PublicKey,
+    isAllowed: boolean
+  ) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const config = SolanaStablecoin.getConfigPDA(mint, this.program.programId);
+    const allowlistEntry = SolanaStablecoin.getAllowlistEntryPDA(
+      mint,
+      wallet,
+      this.program.programId
+    );
+
+    return this.program.methods
+      .updateAllowlistEntry(isAllowed)
+      .accounts({
+        authority,
+        config,
+        mint,
+        wallet,
+        allowlistEntry,
+      } as any);
   }
 
   async pause(authority: PublicKey) {
@@ -454,7 +482,11 @@ export class SolanaStablecoin {
     } as any);
   }
 
-  async updateMinter(
+  /**
+   * Add a new minter (creates minter config account).
+   * If minter already exists, use updateMinterQuota instead.
+   */
+  async addMinter(
     authority: PublicKey,
     minter: PublicKey,
     isActive: boolean,
@@ -478,6 +510,45 @@ export class SolanaStablecoin {
         mint,
         systemProgram: SystemProgram.programId,
       } as any);
+  }
+
+  /**
+   * Update an existing minter's active flag and quota.
+   * Use when addMinter (configureMinter) fails with AlreadyInitialized.
+   */
+  updateMinterQuota(
+    authority: PublicKey,
+    minter: PublicKey,
+    isActive: boolean,
+    dailyLimit: number | string
+  ) {
+    if (!this.mintAddress) throw new Error("Mint not set");
+    const mint = this.mintAddress;
+    const minterAccount = SolanaStablecoin.getMinterPDA(
+      mint,
+      minter,
+      this.program.programId
+    );
+
+    return this.program.methods
+      .updateMinter(isActive, new BN(dailyLimit))
+      .accounts({
+        admin: authority,
+        config: SolanaStablecoin.getConfigPDA(mint, this.program.programId),
+        minter,
+        minterConfig: minterAccount,
+        mint,
+      } as any);
+  }
+
+  /** @deprecated Use addMinter for new minters, updateMinterQuota for existing. */
+  async updateMinter(
+    authority: PublicKey,
+    minter: PublicKey,
+    isActive: boolean,
+    dailyLimit: number | string
+  ) {
+    return this.addMinter(authority, minter, isActive, dailyLimit);
   }
 
   async updateRoles(

@@ -48,6 +48,43 @@ export class SSSComplianceModule {
     } as any);
   }
 
+  /**
+   * Update blacklist entry (e.g. set is_blacklisted = true after remove).
+   * Use when addToBlacklist fails with AlreadyInitialized.
+   */
+  updateBlacklistEntry(
+    authority: PublicKey,
+    accountToUpdate: PublicKey,
+    isBlacklisted: boolean
+  ) {
+    if (!this.sdk.mintAddress) throw new Error("Mint not set");
+    const mint = this.sdk.mintAddress;
+    const config = SolanaStablecoin.getConfigPDA(
+      mint,
+      this.sdk.program.programId
+    );
+    const roleAccount = SolanaStablecoin.getRoleAccountPDA(
+      mint,
+      this.sdk.program.programId
+    );
+    const blacklistEntry = SolanaStablecoin.getBlacklistEntryPDA(
+      mint,
+      accountToUpdate,
+      this.sdk.program.programId
+    );
+
+    return this.sdk.program.methods
+      .updateBlacklistEntry(isBlacklisted)
+      .accounts({
+        blacklister: authority,
+        config,
+        roles: roleAccount,
+        targetAccount: accountToUpdate,
+        blacklistEntry,
+        mint,
+      } as any);
+  }
+
   async removeFromBlacklist(
     authority: PublicKey,
     accountToUnblacklist: PublicKey

@@ -48,11 +48,11 @@ pub struct ConfigureMinter<'info> {
     )]
     pub config: Account<'info, StablecoinConfig>,
 
-    /// CHECK: Target minter to configure
+    /// CHECK: Target minter to add (account will be created)
     pub minter: UncheckedAccount<'info>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = admin,
         space = 8 + MinterConfig::INIT_SPACE,
         seeds = [MinterConfig::SEED_PREFIX, mint.key().as_ref(), minter.key().as_ref()],
@@ -61,6 +61,32 @@ pub struct ConfigureMinter<'info> {
     pub minter_config: Account<'info, MinterConfig>,
 
     pub system_program: Program<'info, System>,
+    pub mint: InterfaceAccount<'info, anchor_spl::token_interface::Mint>,
+}
+
+#[derive(Accounts)]
+#[instruction(is_active: bool, daily_mint_quota: u64)]
+pub struct UpdateMinter<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+
+    #[account(
+        seeds = [StablecoinConfig::SEED_PREFIX, mint.key().as_ref()],
+        bump = config.bump,
+        constraint = config.master_authority == admin.key() @ StablecoinError::Unauthorized
+    )]
+    pub config: Account<'info, StablecoinConfig>,
+
+    /// CHECK: Identity of the minter; validated by minter_config PDA seeds.
+    pub minter: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [MinterConfig::SEED_PREFIX, mint.key().as_ref(), minter.key().as_ref()],
+        bump = minter_config.bump
+    )]
+    pub minter_config: Account<'info, MinterConfig>,
+
     pub mint: InterfaceAccount<'info, anchor_spl::token_interface::Mint>,
 }
 
@@ -130,6 +156,17 @@ pub fn handle_configure_minter(
     let minter_config = &mut ctx.accounts.minter_config;
     minter_config.bump = ctx.bumps.minter_config;
     minter_config.minter = ctx.accounts.minter.key();
+    minter_config.is_active = is_active;
+    minter_config.daily_mint_quota = daily_mint_quota;
+    Ok(())
+}
+
+pub fn handle_update_minter(
+    ctx: Context<UpdateMinter>,
+    is_active: bool,
+    daily_mint_quota: u64,
+) -> Result<()> {
+    let minter_config = &mut ctx.accounts.minter_config;
     minter_config.is_active = is_active;
     minter_config.daily_mint_quota = daily_mint_quota;
     Ok(())

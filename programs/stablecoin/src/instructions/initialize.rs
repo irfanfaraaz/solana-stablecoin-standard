@@ -35,7 +35,7 @@ pub struct Initialize<'info> {
     pub admin: Signer<'info>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = admin,
         space = 8 + StablecoinConfig::INIT_SPACE,
         seeds = [StablecoinConfig::SEED_PREFIX, mint.key().as_ref()],
@@ -44,7 +44,7 @@ pub struct Initialize<'info> {
     pub config: Account<'info, StablecoinConfig>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = admin,
         space = 8 + RoleAccount::INIT_SPACE,
         seeds = [RoleAccount::SEED_PREFIX, mint.key().as_ref()],
@@ -77,11 +77,6 @@ pub fn handle_initialize(
     enable_allowlist: bool,
     transfer_hook_program_id: Option<Pubkey>,
 ) -> Result<()> {
-    require!(
-        ctx.accounts.config.master_authority == Pubkey::default(),
-        StablecoinError::AlreadyInitialized
-    );
-
     let mut extension_types = vec![];
     if enable_permanent_delegate {
         extension_types.push(ExtensionType::PermanentDelegate);
